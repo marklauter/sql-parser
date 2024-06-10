@@ -14,37 +14,51 @@ public static class DdlToken
 
     public static TextParser<bool> IsTemporary { get; } =
         Span.EqualToIgnoreCase("TEMPORARY").Try().Or(Span.EqualToIgnoreCase("TEMP").Try())
+        .IgnoreThen(Span.WhiteSpace)
         .Value(true)
-        .Or(Parse.Return(false));
+        .OptionalOrDefault(false);
 
     public static TextParser<TextSpan> Table { get; } =
-        Span.WhiteSpace.Optional()
-        .IgnoreThen(Span.EqualToIgnoreCase("TABLE"))
+        Span.EqualToIgnoreCase("TABLE")
         .IgnoreThen(Span.WhiteSpace);
 
     public static TextParser<TableName> TableName { get; } =
         Identifier.Then(first =>
-            Character.EqualTo('.').Optional().Then(
-                dot => dot.HasValue
-                    ? Identifier.Then(second => Parse.Return(new TableName(second.ToString(), first.ToString())))
-                    : Parse.Return(new TableName(first.ToString(), null))));
+            Character.EqualTo('.').Optional().Then(dot => dot.HasValue
+                ? Identifier.Then(second => Parse.Return(new TableName(second.ToString(), first.ToString())))
+                : Parse.Return(new TableName(first.ToString(), null))));
+
+    public static TextParser<bool> IfNotExists { get; } =
+        Span.EqualToIgnoreCase("IF NOT EXISTS").IgnoreThen(Span.WhiteSpace).Try()
+        .Value(true)
+        .OptionalOrDefault(false);
 
     public static TextParser<CreateTableStatement> CreateTableStatement { get; } =
         Create.IgnoreThen(IsTemporary.Then(isTemporary =>
-            Table.IgnoreThen(TableName.Then(tableName =>
-                Parse.Return(new CreateTableStatement(tableName, isTemporary))))));
+            Table.IgnoreThen(IfNotExists.Then(ifNotExists =>
+                TableName.Then(tableName =>
+                    Parse.Return(new CreateTableStatement(tableName, isTemporary, ifNotExists)))))));
 
-    //public static TextParser<bool> CheckExists { get; } = Span.EqualToIgnoreCase("IF NOT EXISTS").IgnoreThen(Span.WhiteSpace);
-    //public static TextParser<TextSpan> OpenParen { get; } = Span.EqualTo('(').IgnoreThen(Span.WhiteSpace);
-    //public static TextParser<TextSpan> CloseParen { get; } = Span.EqualTo(')').IgnoreThen(Span.WhiteSpace);
-    //public static TextParser<TextSpan> Comma { get; } = Span.EqualTo(',').IgnoreThen(Span.WhiteSpace);
+    public static TextParser<TextSpan> OpenParen { get; } =
+        Span.WhiteSpace.Try()
+        .IgnoreThen(Span.EqualTo('('));
+
+    public static TextParser<TextSpan> CloseParen { get; } =
+        Span.WhiteSpace.Try()
+        .IgnoreThen(Span.EqualTo(')'));
+
+    public static TextParser<TextSpan> Comma { get; } =
+        Span.WhiteSpace.Try()
+        .IgnoreThen(Span.EqualTo(','))
+        .IgnoreThen(Span.WhiteSpace.Try());
+
     //public static TextParser<TextSpan> PrimaryKey { get; } = Span.EqualToIgnoreCase("PRIMARY KEY").IgnoreThen(Span.WhiteSpace);
     //public static TextParser<TextSpan> Unique { get; } = Span.EqualToIgnoreCase("UNIQUE").IgnoreThen(Span.WhiteSpace);
 }
 
 public record TableName(string Name, string? Schema);
 
-public record CreateTableStatement(TableName TableName, bool IsTemp);
+public record CreateTableStatement(TableName TableName, bool IsTemp, bool IfNotExists);
 
 public record TypeName(string Name, int[] Modifier);
 
@@ -55,6 +69,7 @@ public sealed class CreateTableParserTests
     private static readonly string CreateTableDdl = File.ReadAllText("create-table-apples.sql");
     private static readonly string CreateTempTableDdl = File.ReadAllText("create-temp-table-apples.sql");
     private static readonly string CreateSchemaTableDdl = File.ReadAllText("create-table-trees-apples.sql");
+    private static readonly string CreateTableIfNotExistsDdl = File.ReadAllText("create-table-ifnotexists-apples.sql");
 
     [Fact]
     public void CreateTest()
@@ -65,8 +80,8 @@ public sealed class CreateTableParserTests
 
     [Theory]
     [InlineData("table", false)]
-    [InlineData("temp", true)]
-    [InlineData("temporary", true)]
+    [InlineData("temp ", true)]
+    [InlineData("temporary ", true)]
     public void IsTemporaryTest(string ddl, bool isTemp)
     {
         var result = DdlToken.IsTemporary.TryParse(ddl);
@@ -80,13 +95,12 @@ public sealed class CreateTableParserTests
     [InlineData("create temporary table apples", true)]
     public void CreateThenIsTemporaryAndNameTest(string ddl, bool isTemporary)
     {
-        var p = DdlToken.Create.IgnoreThen(
+        var parser = DdlToken.Create.IgnoreThen(
             DdlToken.IsTemporary.Then(isTemporary =>
                 DdlToken.Table.IgnoreThen(DdlToken.TableName
                     .Then(name => Parse.Return((isTemporary, name))))));
 
-        var result = p.TryParse(ddl);
-        //var result = DdlToken.Create.IgnoreThen(DdlToken.IsTemporary).TryParse(ddl);
+        var result = parser.TryParse(ddl);
         Assert.True(result.HasValue, "result.HasValue");
         Assert.Equal(isTemporary, result.Value.isTemporary);
     }
@@ -100,6 +114,7 @@ public sealed class CreateTableParserTests
         Assert.Equal("apples", createTable.TableName.Name);
         Assert.Null(createTable.TableName.Schema);
         Assert.False(createTable.IsTemp, "IsTemp");
+        Assert.False(createTable.IfNotExists, "IfNotExists");
     }
 
     [Fact]
@@ -111,6 +126,7 @@ public sealed class CreateTableParserTests
         Assert.Equal("apples", createTable.TableName.Name);
         Assert.Null(createTable.TableName.Schema);
         Assert.True(createTable.IsTemp, "IsTemp");
+        Assert.False(createTable.IfNotExists, "IfNotExists");
     }
 
     [Fact]
@@ -122,5 +138,18 @@ public sealed class CreateTableParserTests
         Assert.Equal("apples", createTable.TableName.Name);
         Assert.Equal("trees", createTable.TableName.Schema);
         Assert.False(createTable.IsTemp, "IsTemp");
+        Assert.False(createTable.IfNotExists, "IfNotExists");
+    }
+
+    [Fact]
+    public void CreateTableIfNotExistsStatementTest()
+    {
+        var result = DdlToken.CreateTableStatement.TryParse(CreateTableIfNotExistsDdl);
+        Assert.True(result.HasValue, "result.HasValue");
+        var createTable = result.Value;
+        Assert.Equal("apples", createTable.TableName.Name);
+        Assert.Null(createTable.TableName.Schema);
+        Assert.False(createTable.IsTemp, "IsTemp");
+        Assert.True(createTable.IfNotExists, "IfNotExists");
     }
 }
