@@ -32,7 +32,7 @@ public static class DdlToken
     public static TextParser<CreateTableStatement> CreateTableStatement { get; } =
         Create.IgnoreThen(IsTemporary.Then(isTemporary =>
             Table.IgnoreThen(TableName.Then(tableName =>
-            Parse.Return(new CreateTableStatement(tableName, isTemporary))))));
+                Parse.Return(new CreateTableStatement(tableName, isTemporary))))));
 
     //public static TextParser<bool> CheckExists { get; } = Span.EqualToIgnoreCase("IF NOT EXISTS").IgnoreThen(Span.WhiteSpace);
     //public static TextParser<TextSpan> OpenParen { get; } = Span.EqualTo('(').IgnoreThen(Span.WhiteSpace);
