@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="create-table-apples-simple-columns.sql" />
     <None Remove="create-table-apples.sql" />
     <None Remove="create-table-ifnotexists-apples.sql" />
     <None Remove="create-table-trees-apples.sql" />
@@ -17,6 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="create-table-apples-simple-columns.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="create-table-ifnotexists-apples.sql">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

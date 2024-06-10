@@ -3,9 +3,18 @@ using Superpower.Model;
 using Superpower.Parsers;
 namespace Squeal.Tests;
 
+public enum ColumnTypes : uint
+{
+    Text,
+    Numeric,
+    Integer,
+    Real,
+    Blob,
+}
+
 public static class DdlToken
 {
-    public static TextParser<TextSpan> Identifier { get; } = Span.Regex(@"[a-zA-Z_][a-zA-Z0-9_]*");
+    public static TextParser<string> Identifier { get; } = Span.Regex(@"[a-zA-Z_][a-zA-Z0-9_]*").Then(ts => Parse.Return(ts.ToString()));
 
     public static TextParser<TextSpan> Create { get; } =
         Span.WhiteSpace.Optional()
@@ -25,8 +34,8 @@ public static class DdlToken
     public static TextParser<TableName> TableName { get; } =
         Identifier.Then(first =>
             Character.EqualTo('.').Optional().Then(dot => dot.HasValue
-                ? Identifier.Then(second => Parse.Return(new TableName(second.ToString(), first.ToString())))
-                : Parse.Return(new TableName(first.ToString(), null))));
+                ? Identifier.Then(second => Parse.Return(new TableName(second, first)))
+                : Parse.Return(new TableName(first, null))));
 
     public static TextParser<bool> IfNotExists { get; } =
         Span.EqualToIgnoreCase("IF NOT EXISTS").IgnoreThen(Span.WhiteSpace).Try()
@@ -40,17 +49,36 @@ public static class DdlToken
                     Parse.Return(new CreateTableStatement(tableName, isTemporary, ifNotExists)))))));
 
     public static TextParser<TextSpan> OpenParen { get; } =
-        Span.WhiteSpace.Try()
+        Span.WhiteSpace.Optional()
         .IgnoreThen(Span.EqualTo('('));
 
-    public static TextParser<TextSpan> CloseParen { get; } =
-        Span.WhiteSpace.Try()
-        .IgnoreThen(Span.EqualTo(')'));
+    public static TextParser<TextSpan> CloseParen { get; } = Span.EqualTo(')');
+    //Span.WhiteSpace.Optional().Try()
+    //.IgnoreThen(Span.EqualTo(')'));
 
-    public static TextParser<TextSpan> Comma { get; } =
-        Span.WhiteSpace.Try()
-        .IgnoreThen(Span.EqualTo(','))
-        .IgnoreThen(Span.WhiteSpace.Try());
+    public static TextParser<TextSpan> Comma { get; } = Span.EqualTo(',');
+    public static TextParser<TextSpan?> CommaDelimiter { get; } =
+        Span.WhiteSpace.Optional()
+        .IgnoreThen(Comma)
+        .IgnoreThen(Span.WhiteSpace.Optional());
+
+    public static TextParser<ColumnTypes> ColumnType { get; } =
+        Span.EqualToIgnoreCase("TEXT").Try().Value(ColumnTypes.Text)
+        .Or(Span.EqualToIgnoreCase("NUMERIC").Try().Or(Span.EqualToIgnoreCase("NUM").Try()).Value(ColumnTypes.Numeric))
+        .Or(Span.EqualToIgnoreCase("INTEGER").Try().Or(Span.EqualToIgnoreCase("INT").Try()).Value(ColumnTypes.Integer))
+        .Or(Span.EqualToIgnoreCase("REAL").Value(ColumnTypes.Real))
+        .Or(Span.EqualToIgnoreCase("BLOB").Value(ColumnTypes.Blob))
+        .OptionalOrDefault(ColumnTypes.Blob);
+
+    public static TextParser<ColumnDef> Column { get; } =
+        Span.WhiteSpace.Optional().IgnoreThen(Identifier.Then(name =>
+            Span.WhiteSpace.IgnoreThen(ColumnType.Then(type =>
+                Span.WhiteSpace.Optional().Value(new ColumnDef(name, type, false, false))))));
+
+    public static TextParser<ColumnDef[]> Columns { get; } =
+        OpenParen
+        .IgnoreThen(Column.ManyDelimitedBy(Comma))
+        .Then(columns => CloseParen.Value(columns));
 
     //public static TextParser<TextSpan> PrimaryKey { get; } = Span.EqualToIgnoreCase("PRIMARY KEY").IgnoreThen(Span.WhiteSpace);
     //public static TextParser<TextSpan> Unique { get; } = Span.EqualToIgnoreCase("UNIQUE").IgnoreThen(Span.WhiteSpace);
@@ -60,13 +88,14 @@ public record TableName(string Name, string? Schema);
 
 public record CreateTableStatement(TableName TableName, bool IsTemp, bool IfNotExists);
 
-public record TypeName(string Name, int[] Modifier);
+//public record DataType(DataTypes Type, int[] Modifier);
 
-public record ColumnDef(string Name, TypeName DataType, bool IsPrimaryKey, bool IsAutoIncrement);
+public record ColumnDef(string Name, ColumnTypes Type, bool IsPrimaryKey, bool IsAutoIncrement);
 
 public sealed class CreateTableParserTests
 {
     private static readonly string CreateTableDdl = File.ReadAllText("create-table-apples.sql");
+    private static readonly string CreateTableSimpleColumnsDdl = File.ReadAllText("create-table-apples-simple-columns.sql");
     private static readonly string CreateTempTableDdl = File.ReadAllText("create-temp-table-apples.sql");
     private static readonly string CreateSchemaTableDdl = File.ReadAllText("create-table-trees-apples.sql");
     private static readonly string CreateTableIfNotExistsDdl = File.ReadAllText("create-table-ifnotexists-apples.sql");
@@ -90,6 +119,22 @@ public sealed class CreateTableParserTests
     }
 
     [Theory]
+    [InlineData("TEXT", ColumnTypes.Text)]
+    [InlineData("NUMERIC", ColumnTypes.Numeric)]
+    [InlineData("NUM", ColumnTypes.Numeric)]
+    [InlineData("INTEGER", ColumnTypes.Integer)]
+    [InlineData("INT", ColumnTypes.Integer)]
+    [InlineData("REAL", ColumnTypes.Real)]
+    [InlineData("BLOB", ColumnTypes.Blob)]
+    [InlineData("", ColumnTypes.Blob)]
+    public void ColumnTypeTest(string ddl, ColumnTypes type)
+    {
+        var result = DdlToken.ColumnType.TryParse(ddl);
+        Assert.True(result.HasValue, "result.HasValue");
+        Assert.Equal(type, result.Value);
+    }
+
+    [Theory]
     [InlineData("create table apples", false)]
     [InlineData("create temp table apples", true)]
     [InlineData("create temporary table apples", true)]
@@ -103,6 +148,20 @@ public sealed class CreateTableParserTests
         var result = parser.TryParse(ddl);
         Assert.True(result.HasValue, "result.HasValue");
         Assert.Equal(isTemporary, result.Value.isTemporary);
+    }
+
+    [Theory]
+    [InlineData("(id integer,name text,color text)")]
+    [InlineData("( id integer,name text,color text)")]
+    [InlineData("(id integer,name text,color text )")]
+    [InlineData(" (id integer,name text,color text)")]
+    [InlineData("(id integer ,name text , color text)")]
+    [InlineData("(id integer, name text, color text)")]
+    public void ColumnsTest(string ddl)
+    {
+        var result = DdlToken.Columns.TryParse(ddl);
+        Assert.True(result.HasValue, "result.HasValue");
+        Assert.Equal(3, result.Value.Length);
     }
 
     [Fact]
