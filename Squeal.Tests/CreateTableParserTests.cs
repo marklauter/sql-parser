@@ -38,7 +38,8 @@ public static class DdlToken
                 : Parse.Return(new TableName(first, null))));
 
     public static TextParser<bool> IfNotExists { get; } =
-        Span.EqualToIgnoreCase("IF NOT EXISTS").IgnoreThen(Span.WhiteSpace).Try()
+        Span.EqualToIgnoreCase("IF NOT EXISTS")
+        .IgnoreThen(Span.WhiteSpace).Try()
         .Value(true)
         .OptionalOrDefault(false);
 
