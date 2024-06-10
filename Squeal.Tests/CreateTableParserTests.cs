@@ -13,9 +13,9 @@ public static class DdlToken
         .IgnoreThen(Span.WhiteSpace);
 
     public static TextParser<bool> IsTemporary { get; } =
-        Span.EqualToIgnoreCase("TEMPORARY").Try()
-        .Or(Span.EqualToIgnoreCase("TEMP")).Try()
-        .Optional().Then(ts => Parse.Return(ts.HasValue));
+        Span.EqualToIgnoreCase("TEMPORARY").Try().Or(Span.EqualToIgnoreCase("TEMP").Try())
+        .Value(true)
+        .Or(Parse.Return(false));
 
     public static TextParser<TextSpan> Table { get; } =
         Span.WhiteSpace.Optional()
