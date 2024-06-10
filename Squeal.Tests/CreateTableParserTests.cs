@@ -48,19 +48,9 @@ public static class DdlToken
                 TableName.Then(tableName =>
                     Parse.Return(new CreateTableStatement(tableName, isTemporary, ifNotExists)))))));
 
-    public static TextParser<TextSpan> OpenParen { get; } =
-        Span.WhiteSpace.Optional()
-        .IgnoreThen(Span.EqualTo('('));
-
+    public static TextParser<TextSpan> OpenParen { get; } = Span.EqualTo('(');
     public static TextParser<TextSpan> CloseParen { get; } = Span.EqualTo(')');
-    //Span.WhiteSpace.Optional().Try()
-    //.IgnoreThen(Span.EqualTo(')'));
-
     public static TextParser<TextSpan> Comma { get; } = Span.EqualTo(',');
-    public static TextParser<TextSpan?> CommaDelimiter { get; } =
-        Span.WhiteSpace.Optional()
-        .IgnoreThen(Comma)
-        .IgnoreThen(Span.WhiteSpace.Optional());
 
     public static TextParser<ColumnTypes> ColumnType { get; } =
         Span.EqualToIgnoreCase("TEXT").Try().Value(ColumnTypes.Text)
@@ -76,7 +66,8 @@ public static class DdlToken
                 Span.WhiteSpace.Optional().Value(new ColumnDef(name, type, false, false))))));
 
     public static TextParser<ColumnDef[]> Columns { get; } =
-        OpenParen
+        Span.WhiteSpace.Optional()
+        .IgnoreThen(OpenParen)
         .IgnoreThen(Column.ManyDelimitedBy(Comma))
         .Then(columns => CloseParen.Value(columns));
 
