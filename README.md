@@ -4,7 +4,8 @@
 
 
 # sql-parser
-SQL parser for Code Crafters SQLite challenge.
+A C# SQLite SQL and DDL parser built with [Superpower](https://github.com/datalust/superpower) for the Code Crafters SQLite challenge.
 
-Using [Superpower](https://github.com/datalust/superpower) to build the parser.
+## Dev Log
+- 2024 JUN 10 - Create table statement nearly complete.
 </div>
