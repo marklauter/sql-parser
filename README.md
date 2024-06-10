@@ -7,5 +7,5 @@
 A C# SQLite SQL and DDL parser built with [Superpower](https://github.com/datalust/superpower) for the [Code Crafters SQLite challenge](https://app.codecrafters.io/courses/sqlite/introduction).
 
 ## Dev Log
-- 2024 JUN 10 - Create table statement nearly complete.
+- 2024 JUN 10 - Create table statement nearly complete. The Squeal library project doesn't build, so unload it. The working code is in the unit tests.
 </div>
