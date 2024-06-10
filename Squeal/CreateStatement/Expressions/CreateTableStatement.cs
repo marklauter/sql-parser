@@ -7,4 +7,10 @@ internal sealed record TableConstraint(
     PrimaryKey? PrimaryKey,
     Unique? Unique) : Expression;
 
-internal sealed record CreateTableStatement(bool IsTemporary, bool CheckExists, Table? Table, ColumnDef? Columns, TableConstraint? TableConstraint) : Statement;
+internal sealed record CreateTableStatement(
+    bool IsTemporary,
+    bool CheckExists,
+    Table? Table,
+    ColumnDef? Columns,
+    TableConstraint?
+    TableConstraint) : Statement;
