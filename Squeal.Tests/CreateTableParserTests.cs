@@ -39,15 +39,16 @@ public sealed class CreateTableParserTests
     }
 
     [Theory]
-    [InlineData("name", 0)]
-    [InlineData("name(1)", 1)]
-    [InlineData("name(1,2)", 2)]
+    [InlineData("INTEGER", 0)]
+    [InlineData("INTEGER(1)", 1)]
+    [InlineData("INTEGER(1,2)", 2)]
     public void TypeNameTest(string sql, int expectedCount)
     {
         var tokens = Sql.Tokenizer.Tokenize(sql);
         var result = Ddl.TypeName.TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         var typeName = result.Value;
+        Assert.Equal("INTEGER", typeName.Name);
         Assert.Equal(expectedCount, typeName.Modifier.Length);
         if (expectedCount > 0)
         {
@@ -61,13 +62,54 @@ public sealed class CreateTableParserTests
     }
 
     [Theory]
-    [InlineData("name(1")]
+    [InlineData("INTEGER(1")]
     public void TypeNameReturnsUnexpectedEndOfInput(string sql)
     {
         var tokens = Sql.Tokenizer.Tokenize(sql);
         var result = Ddl.TypeName.TryParse(tokens);
         Assert.False(result.HasValue, result.ToString());
         Assert.Contains("unexpected end of input", result.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData("Id INTEGER", 0)]
+    [InlineData("Id INTEGER(1)", 1)]
+    [InlineData("Id INTEGER(1,2)", 2)]
+    public void ColumnTest(string sql, int expectedCount)
+    {
+        var tokens = Sql.Tokenizer.Tokenize(sql);
+        var result = Ddl.Column.TryParse(tokens);
+        Assert.True(result.HasValue, result.ToString());
+        var column = result.Value;
+        Assert.Equal("Id", column.Name);
+
+        Assert.NotNull(column.Type);
+        var typeName = column.Type;
+        Assert.Equal("INTEGER", typeName.Name);
+        Assert.Equal(expectedCount, typeName.Modifier.Length);
+        if (expectedCount > 0)
+        {
+            Assert.Equal(1, typeName.Modifier.First());
+        }
+
+        if (expectedCount > 1)
+        {
+            Assert.Equal(2, typeName.Modifier.Last());
+        }
+    }
+
+    [Theory]
+    [InlineData("Id")]
+    public void ColumnTest2(string sql)
+    {
+        var tokens = Sql.Tokenizer.Tokenize(sql);
+        var result = Ddl.Column.TryParse(tokens);
+        Assert.True(result.HasValue, result.ToString());
+        var column = result.Value;
+        Assert.Equal("Id", column.Name);
+
+        Assert.NotNull(column.Type);
+        Assert.Equal("BLOB", column.Type.Name);
     }
 
     //[Fact]

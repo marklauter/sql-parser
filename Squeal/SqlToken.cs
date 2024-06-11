@@ -1,6 +1,5 @@
 ﻿namespace Squeal;
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Naming", "CA1720:Identifier contains type name", Justification = "doesn't matter")]
 public enum SqlToken
 {
     False,
@@ -19,7 +18,6 @@ public enum SqlToken
     Exists,
     Not,
     If,
-    ColumnType,
     Dot,
     As,
     SignedNumber,
@@ -74,9 +72,9 @@ public enum SqlToken
     Then,
     Else,
     End,
-    Text,
-    Numeric,
-    Int,
-    Real,
-    Blob,
+    ColumnTypeText,
+    ColumnTypeNumeric,
+    ColumnTypeInt,
+    ColumnTypeReal,
+    ColumnTypeBlob,
 }
