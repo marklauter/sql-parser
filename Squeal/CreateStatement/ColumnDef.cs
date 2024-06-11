@@ -1,5 +1,7 @@
 ﻿namespace Squeal.CreateStatement;
 
-//public record DataType(DataTypes Type, int[] Modifier);
+public record TypeName(string Name, int[] Modifier);
 
-public record ColumnDef(string Name, int Type, bool IsPrimaryKey, bool IsAutoIncrement);
+public record ColumnConstraint(string? Name);
+
+public record ColumnDef(string Name, TypeName? Type, ColumnConstraint? Constraint);

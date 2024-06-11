@@ -15,7 +15,7 @@ public sealed class CreateTableParserTests
     {
         var sql = "create temp table if not exists trees.apples";
         var tokens = Sql.Tokenizer.Tokenize(sql);
-        var result = Ddl.CreateTable.TryParse(tokens);
+        var result = Ddl.CreateTableStatement.TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         var statement = result.Value;
         Assert.True(statement.IsTemp, "IsTemp");
@@ -29,13 +29,45 @@ public sealed class CreateTableParserTests
     {
         var sql = "create table apples";
         var tokens = Sql.Tokenizer.Tokenize(sql);
-        var result = Ddl.CreateTable.TryParse(tokens);
+        var result = Ddl.CreateTableStatement.TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         var statement = result.Value;
         Assert.False(statement.IsTemp, "IsTemp");
         Assert.False(statement.IfNotExists, "IfNotExists");
         Assert.Equal("apples", statement.TableName.Name);
         Assert.Null(statement.TableName.Schema);
+    }
+
+    [Theory]
+    [InlineData("name", 0)]
+    [InlineData("name(1)", 1)]
+    [InlineData("name(1,2)", 2)]
+    public void TypeNameTest(string sql, int expectedCount)
+    {
+        var tokens = Sql.Tokenizer.Tokenize(sql);
+        var result = Ddl.TypeName.TryParse(tokens);
+        Assert.True(result.HasValue, result.ToString());
+        var typeName = result.Value;
+        Assert.Equal(expectedCount, typeName.Modifier.Length);
+        if (expectedCount > 0)
+        {
+            Assert.Equal(1, typeName.Modifier.First());
+        }
+
+        if (expectedCount > 1)
+        {
+            Assert.Equal(2, typeName.Modifier.Last());
+        }
+    }
+
+    [Theory]
+    [InlineData("name(1")]
+    public void TypeNameReturnsUnexpectedEndOfInput(string sql)
+    {
+        var tokens = Sql.Tokenizer.Tokenize(sql);
+        var result = Ddl.TypeName.TryParse(tokens);
+        Assert.False(result.HasValue, result.ToString());
+        Assert.Contains("unexpected end of input", result.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
     //[Fact]
