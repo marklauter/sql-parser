@@ -9,4 +9,5 @@ A C# SQLite SQL and DDL parser built with [Superpower](https://github.com/datalu
 ## Dev Log
 - 2024 JUN 10 - Create table statement nearly complete. The Squeal library project doesn't build, so unload it. The working code is in the unit tests.
 - 2024 JUN 11 - Next step is the simplest select statement. That should be enough to complete the next stage of the Code Crafters challenge.
+- 2024 JUN 12 - Switched to the Superpower tokenizer. This saves the hassle of manually skipping whitespace. Library builds again. Tests are unorganized.
 </div>
