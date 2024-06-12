@@ -74,7 +74,7 @@ public enum SqlToken
     End,
     ColumnTypeText,
     ColumnTypeNumeric,
-    ColumnTypeInt,
+    ColumnTypeInteger,
     ColumnTypeReal,
     ColumnTypeBlob,
 }

@@ -1,3 +1,3 @@
 ﻿namespace Squeal.CreateStatement;
 
-public record TypeName(string Name, int[] Modifier);
+public record TypeName(ColumnTypes Type, int[] Modifier);

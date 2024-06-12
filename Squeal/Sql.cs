@@ -52,7 +52,7 @@ internal static class Sql
         .Match(Span.EqualToIgnoreCase("IN"), SqlToken.In, true)
         .Match(Span.EqualToIgnoreCase("INDEX"), SqlToken.Index, true)
         .Match(Span.EqualToIgnoreCase("INITIALLY"), SqlToken.Initially, true)
-        .Match(Span.EqualToIgnoreCase("INTEGER").Try().Or(Span.EqualToIgnoreCase("INT")), SqlToken.ColumnTypeInt, true)
+        .Match(Span.EqualToIgnoreCase("INTEGER").Try().Or(Span.EqualToIgnoreCase("INT")), SqlToken.ColumnTypeInteger, true)
         .Match(Span.EqualToIgnoreCase("ISNULL"), SqlToken.IsNull, true)
         .Match(Span.EqualToIgnoreCase("KEY"), SqlToken.Key, true)
         .Match(Span.EqualToIgnoreCase("LIKE"), SqlToken.Like, true)

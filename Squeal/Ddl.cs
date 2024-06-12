@@ -22,7 +22,7 @@ public static class Ddl
     internal static readonly TextParser<string> AsString = input =>
         Result.Value(input.ToString(), input, input.Skip(input.Length));
 
-    private static readonly TokenListParser<SqlToken, bool> IsTemporary =
+    internal static readonly TokenListParser<SqlToken, bool> IsTemporary =
         Token.EqualTo(SqlToken.IsTemporary).Value(true).OptionalOrDefault(false);
 
     internal static readonly TokenListParser<SqlToken, bool> HasDot =
@@ -31,7 +31,7 @@ public static class Ddl
     internal static readonly TokenListParser<SqlToken, int> SignedNumber =
         Token.EqualTo(SqlToken.SignedNumber).Apply(Numerics.IntegerInt32);
 
-    private static readonly TokenListParser<SqlToken, bool> IfNotExists =
+    internal static readonly TokenListParser<SqlToken, bool> IfNotExists =
         Token.EqualTo(SqlToken.If)
         .IgnoreThen(Token.EqualTo(SqlToken.Not))
         .IgnoreThen(Token.EqualTo(SqlToken.Exists))
@@ -45,14 +45,13 @@ public static class Ddl
             ? new TableName(secondIdentifier, firstIdentifier)
             : new TableName(firstIdentifier, null))));
 
-    internal static readonly TokenListParser<SqlToken, string> ColumnType =
-        Token.EqualTo(SqlToken.ColumnTypeBlob)
-        .Or(Token.EqualTo(SqlToken.ColumnTypeInt))
-        .Or(Token.EqualTo(SqlToken.ColumnTypeNumeric))
-        .Or(Token.EqualTo(SqlToken.ColumnTypeReal))
-        .Or(Token.EqualTo(SqlToken.ColumnTypeText))
-        .Apply(AsString)
-        .OptionalOrDefault("BLOB");
+    internal static readonly TokenListParser<SqlToken, ColumnTypes> ColumnType =
+        Token.EqualTo(SqlToken.ColumnTypeInteger).Value(ColumnTypes.INTEGER)
+        .Or(Token.EqualTo(SqlToken.ColumnTypeText).Value(ColumnTypes.TEXT))
+        .Or(Token.EqualTo(SqlToken.ColumnTypeNumeric).Value(ColumnTypes.NUMERIC))
+        .Or(Token.EqualTo(SqlToken.ColumnTypeReal).Value(ColumnTypes.REAL))
+        .Or(Token.EqualTo(SqlToken.ColumnTypeBlob).Value(ColumnTypes.BLOB))
+        .OptionalOrDefault(ColumnTypes.BLOB);
 
     internal static readonly TokenListParser<SqlToken, int[]> TypeModifier =
         LParen.Optional()
