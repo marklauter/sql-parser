@@ -55,8 +55,8 @@ public static class Ddl
 
     internal static readonly TokenListParser<SqlToken, int[]> TypeModifier =
         LParen
-        .IgnoreThen(SignedNumber.ManyDelimitedBy(Comma)
-        .Then(numbers => RParen.Value(numbers)))
+        .IgnoreThen(SignedNumber.ManyDelimitedBy(Comma, RParen)
+        .Select(numbers => numbers))
         .OptionalOrDefault([]);
 
     internal static readonly TokenListParser<SqlToken, TypeName> TypeName =
