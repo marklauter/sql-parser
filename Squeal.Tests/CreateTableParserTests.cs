@@ -7,7 +7,7 @@ public sealed class CreateTableParserTests
 {
     [Theory]
     [ClassData(typeof(DdlTestData))]
-    public void Test(string ddl, bool isTemp, bool ifNotExists, string tableName, string? schema)
+    public void CreateTableStatementTest(string ddl, bool isTemp, bool ifNotExists, string tableName, string? schema)
     {
         var tokens = Sql.Tokenizer.Tokenize(ddl);
         var result = Ddl.CreateTableStatement.TryParse(tokens);
@@ -72,6 +72,18 @@ public sealed class CreateTableParserTests
     }
 
     [Theory]
+    [InlineData("table", false)]
+    [InlineData("temp", true)]
+    [InlineData("temporary", true)]
+    public void IsTemporaryTest(string ddl, bool isTemp)
+    {
+        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var result = Ddl.IsTemporary.TryParse(tokens);
+        Assert.True(result.HasValue, "result.HasValue");
+        Assert.Equal(isTemp, result.Value);
+    }
+
+    [Theory]
     [InlineData("Id TEXT", ColumnTypes.TEXT, 0)]
     [InlineData("Id TEXT(1)", ColumnTypes.TEXT, 1)]
     [InlineData("Id TEXT(1, 2)", ColumnTypes.TEXT, 2)]
@@ -118,28 +130,24 @@ public sealed class CreateTableParserTests
     }
 
     [Theory]
-    [InlineData("table", false)]
-    [InlineData("temp", true)]
-    [InlineData("temporary", true)]
-    public void IsTemporaryTest(string ddl, bool isTemp)
+    [InlineData("(id integer,name text,color num)")]
+    [InlineData("( id integer,name text,color num)")]
+    [InlineData("(id integer,name text,color num )")]
+    [InlineData(" (id integer,name text,color num)")]
+    [InlineData("(id integer ,name text , color num)")]
+    [InlineData("(id integer, name text, color num)")]
+    public void ColumnsTest(string ddl)
     {
         var tokens = Sql.Tokenizer.Tokenize(ddl);
-        var result = Ddl.IsTemporary.TryParse(tokens);
-        Assert.True(result.HasValue, "result.HasValue");
-        Assert.Equal(isTemp, result.Value);
+        var result = Ddl.Columns.TryParse(tokens);
+        Assert.True(result.HasValue, result.ToString());
+        var columns = result.Value;
+        Assert.Equal(3, columns.Length);
+        Assert.Equal("id", columns[0].Name);
+        Assert.Equal("name", columns[1].Name);
+        Assert.Equal("color", columns[2].Name);
+        Assert.Equal(ColumnTypes.INTEGER, columns[0].Type?.Type);
+        Assert.Equal(ColumnTypes.TEXT, columns[1].Type?.Type);
+        Assert.Equal(ColumnTypes.NUMERIC, columns[2].Type?.Type);
     }
-
-    //[Theory]
-    //[InlineData("(id integer,name text,color text)")]
-    //[InlineData("( id integer,name text,color text)")]
-    //[InlineData("(id integer,name text,color text )")]
-    //[InlineData(" (id integer,name text,color text)")]
-    //[InlineData("(id integer ,name text , color text)")]
-    //[InlineData("(id integer, name text, color text)")]
-    //public void ColumnsTest(string ddl)
-    //{
-    //    var result = CreateStatement.CreateDDL.Columns.TryParse(ddl);
-    //    Assert.True(result.HasValue, "result.HasValue");
-    //    Assert.Equal(3, result.Value.Length);
-    //}
 }

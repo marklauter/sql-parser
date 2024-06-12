@@ -54,26 +54,26 @@ public static class Ddl
         .OptionalOrDefault(ColumnTypes.BLOB);
 
     internal static readonly TokenListParser<SqlToken, int[]> TypeModifier =
-        LParen.Optional()
+        LParen
         .IgnoreThen(SignedNumber.ManyDelimitedBy(Comma)
         .Then(numbers => RParen.Value(numbers)))
         .OptionalOrDefault([]);
 
     internal static readonly TokenListParser<SqlToken, TypeName> TypeName =
         ColumnType
-        .Then(name => TypeModifier
-        .Select(signedNumbers => new TypeName(name, signedNumbers)));
+        .Then(type => TypeModifier
+        .Select(modifiers => new TypeName(type, modifiers)));
 
     internal static readonly TokenListParser<SqlToken, ColumnDef> Column =
         Identifier.Apply(AsString)
         .Then(name => TypeName
         .Select(type => new ColumnDef(name, type, null)));
 
-    //internal static TextParser<ColumnDef[]> Columns { get; } =
-    //    Span.WhiteSpace.Optional()
-    //    .IgnoreThen(OpenParen)
-    //    .IgnoreThen(Column.ManyDelimitedBy(Comma))
-    //    .Then(columns => CloseParen.Value(columns));
+    internal static TokenListParser<SqlToken, ColumnDef[]> Columns { get; } =
+        LParen
+        .IgnoreThen(Column.ManyDelimitedBy(Comma, RParen))
+        .Select(columns => columns)
+        .OptionalOrDefault([]);
 
     public static readonly TokenListParser<SqlToken, CreateTableStatement> CreateTableStatement =
         Token.EqualTo(SqlToken.Create)
@@ -81,5 +81,6 @@ public static class Ddl
         .Then(isTemp => Token.EqualTo(SqlToken.Table)
         .IgnoreThen(IfNotExists)
         .Then(ifNotExists => TableName
-        .Select(name => new CreateTableStatement(name, isTemp, ifNotExists))));
+        .Then(name => Columns
+        .Select(columns => new CreateTableStatement(name, isTemp, ifNotExists, columns)))));
 }
