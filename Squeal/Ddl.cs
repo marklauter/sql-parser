@@ -69,7 +69,7 @@ public static class Ddl
         .Then(name => TypeName
         .Select(type => new ColumnDef(name, type, null)));
 
-    internal static TokenListParser<SqlToken, ColumnDef[]> Columns { get; } =
+    internal static TokenListParser<SqlToken, ColumnDef[]> Columns =
         LParen
         .IgnoreThen(Column.ManyDelimitedBy(Comma, RParen))
         .Select(columns => columns)
