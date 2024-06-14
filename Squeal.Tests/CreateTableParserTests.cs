@@ -150,4 +150,33 @@ public sealed class CreateTableParserTests
         Assert.Equal(ColumnTypes.TEXT, columns[1].Type?.Type);
         Assert.Equal(ColumnTypes.NUMERIC, columns[2].Type?.Type);
     }
+
+    [Theory]
+    [InlineData("primary key", "", ColumnConstraints.PrimaryKeyAsc)]
+    [InlineData("CONSTRAINT cname primary key", "cname", ColumnConstraints.PrimaryKeyAsc)]
+    [InlineData("primary key asc", "", ColumnConstraints.PrimaryKeyAsc)]
+    [InlineData("CONSTRAINT cname primary key asc", "cname", ColumnConstraints.PrimaryKeyAsc)]
+    [InlineData("primary key desc", "", ColumnConstraints.PrimaryKeyDesc)]
+    [InlineData("CONSTRAINT cname primary key desc", "cname", ColumnConstraints.PrimaryKeyDesc)]
+    [InlineData("not null", "", ColumnConstraints.NotNull)]
+    [InlineData("CONSTRAINT cname not null", "cname", ColumnConstraints.NotNull)]
+    [InlineData("unique", "", ColumnConstraints.Unique)]
+    [InlineData("CONSTRAINT cname unique", "cname", ColumnConstraints.Unique)]
+    [InlineData("check", "", ColumnConstraints.Check)]
+    [InlineData("CONSTRAINT cname check", "cname", ColumnConstraints.Check)]
+    [InlineData("default", "", ColumnConstraints.Default)]
+    [InlineData("CONSTRAINT cname default", "cname", ColumnConstraints.Default)]
+    [InlineData("collate", "", ColumnConstraints.Collate)]
+    [InlineData("CONSTRAINT cname collate", "cname", ColumnConstraints.Collate)]
+    [InlineData("generated always", "", ColumnConstraints.Generated)]
+    [InlineData("CONSTRAINT cname generated always", "cname", ColumnConstraints.Generated)]
+    public void ColumnConstraintKindTest(string ddl, string expectedName, ColumnConstraints expectedType)
+    {
+        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var result = Ddl.ConstraintKind.TryParse(tokens);
+        Assert.True(result.HasValue, result.ToString());
+        var constraint = result.Value;
+        Assert.Equal(expectedName, constraint.Name);
+        Assert.Equal(expectedType, constraint.Type);
+    }
 }

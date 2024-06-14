@@ -80,10 +80,9 @@ public static class Ddl
     internal static readonly TokenListParser<SqlToken, ColumnConstraints> PrimaryKey =
         Token.EqualTo(SqlToken.Primary)
         .IgnoreThen(Token.EqualTo(SqlToken.Key))
-        .IgnoreThen(Token.EqualTo(SqlToken.Asc)
-            .Value(ColumnConstraints.PrimaryKeyAsc))
-        .IgnoreThen(Token.EqualTo(SqlToken.Desc)
-            .Value(ColumnConstraints.PrimaryKeyDesc)
+        .IgnoreThen(
+            Token.EqualTo(SqlToken.Asc).Value(ColumnConstraints.PrimaryKeyAsc)
+            .Or(Token.EqualTo(SqlToken.Desc).Value(ColumnConstraints.PrimaryKeyDesc))
             .OptionalOrDefault(ColumnConstraints.PrimaryKeyAsc));
 
     internal static readonly TokenListParser<SqlToken, ColumnConstraints> Unique =
@@ -115,10 +114,10 @@ public static class Ddl
         .Select(type => new ColumnConstraintKind(constraintName, type)))
         .OptionalOrDefault(ColumnConstraintKind.Default);
 
-    internal static readonly TokenListParser<SqlToken, bool> Autoincrement = 
+    internal static readonly TokenListParser<SqlToken, bool> Autoincrement =
         Token.EqualTo(SqlToken.Autoincrement).Value(true).OptionalOrDefault(false);
 
-    internal static readonly TokenListParser<SqlToken, ConflictResolutions> ConcflictClause = 
+    internal static readonly TokenListParser<SqlToken, ConflictResolutions> ConcflictClause =
         Token.EqualTo(SqlToken.On)
         .IgnoreThen(Token.EqualTo(SqlToken.Conflict))
         .IgnoreThen(
