@@ -152,12 +152,12 @@ public sealed class CreateTableParserTests
     }
 
     [Theory]
-    [InlineData("primary key", "", ColumnConstraints.PrimaryKeyAsc)]
-    [InlineData("CONSTRAINT cname primary key", "cname", ColumnConstraints.PrimaryKeyAsc)]
-    [InlineData("primary key asc", "", ColumnConstraints.PrimaryKeyAsc)]
-    [InlineData("CONSTRAINT cname primary key asc", "cname", ColumnConstraints.PrimaryKeyAsc)]
-    [InlineData("primary key desc", "", ColumnConstraints.PrimaryKeyDesc)]
-    [InlineData("CONSTRAINT cname primary key desc", "cname", ColumnConstraints.PrimaryKeyDesc)]
+    //[InlineData("primary key", "", ColumnConstraints.PrimaryKeyAsc)]
+    //[InlineData("CONSTRAINT cname primary key", "cname", ColumnConstraints.PrimaryKeyAsc)]
+    //[InlineData("primary key asc", "", ColumnConstraints.PrimaryKeyAsc)]
+    //[InlineData("CONSTRAINT cname primary key asc", "cname", ColumnConstraints.PrimaryKeyAsc)]
+    //[InlineData("primary key desc", "", ColumnConstraints.PrimaryKeyDesc)]
+    //[InlineData("CONSTRAINT cname primary key desc", "cname", ColumnConstraints.PrimaryKeyDesc)]
     [InlineData("not null", "", ColumnConstraints.NotNull)]
     [InlineData("CONSTRAINT cname not null", "cname", ColumnConstraints.NotNull)]
     [InlineData("unique", "", ColumnConstraints.Unique)]
@@ -178,5 +178,27 @@ public sealed class CreateTableParserTests
         var constraint = result.Value;
         Assert.Equal(expectedName, constraint.Name);
         Assert.Equal(expectedType, constraint.Type);
+    }
+
+    [Theory]
+    [InlineData("primary key", Order.Asc, ConflictResolutions.Undefined, false)]
+    [InlineData("primary key asc", Order.Asc, ConflictResolutions.Undefined, false)]
+    [InlineData("primary key desc", Order.Desc, ConflictResolutions.Undefined, false)]
+    [InlineData("primary key AUTOINCREMENT", Order.Asc, ConflictResolutions.Undefined, true)]
+    [InlineData("primary key asc AUTOINCREMENT", Order.Asc, ConflictResolutions.Undefined, true)]
+    [InlineData("primary key desc AUTOINCREMENT", Order.Desc, ConflictResolutions.Undefined, true)]
+    public void PrimaryKeyTest(
+        string ddl,
+        Order expectedOrder,
+        ConflictResolutions expectedResolution,
+        bool expectedAutoInc)
+    {
+        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var result = Ddl.PrimaryKey.TryParse(tokens);
+        Assert.True(result.HasValue, result.ToString());
+        var primaryKey = result.Value;
+        Assert.Equal(expectedOrder, primaryKey.Order);
+        Assert.Equal(expectedResolution, primaryKey.Resolution);
+        Assert.Equal(expectedAutoInc, primaryKey.AutoIncrement);
     }
 }

@@ -77,13 +77,32 @@ public static class Ddl
         Token.EqualTo(SqlToken.Generated)
         .IgnoreThen(Token.EqualTo(SqlToken.Always).Value(ColumnConstraints.Generated));
 
-    internal static readonly TokenListParser<SqlToken, ColumnConstraints> PrimaryKey =
+    internal static readonly TokenListParser<SqlToken, bool> Autoincrement =
+        Token.EqualTo(SqlToken.Autoincrement).Value(true).OptionalOrDefault(false);
+
+    internal static readonly TokenListParser<SqlToken, ConflictResolutions> ConcflictClause =
+        Token.EqualTo(SqlToken.On)
+        .IgnoreThen(Token.EqualTo(SqlToken.Conflict))
+        .IgnoreThen(
+            Token.EqualTo(SqlToken.Rollback).Value(ConflictResolutions.Rollback)
+            .Or(Token.EqualTo(SqlToken.Abort).Value(ConflictResolutions.Abort))
+            .Or(Token.EqualTo(SqlToken.Fail).Value(ConflictResolutions.Fail))
+            .Or(Token.EqualTo(SqlToken.Ignore).Value(ConflictResolutions.Ignore))
+            .Or(Token.EqualTo(SqlToken.Replace).Value(ConflictResolutions.Replace)))
+        .OptionalOrDefault(ConflictResolutions.Undefined);
+
+    internal static readonly TokenListParser<SqlToken, PrimaryKey> PrimaryKey =
         Token.EqualTo(SqlToken.Primary)
         .IgnoreThen(Token.EqualTo(SqlToken.Key))
-        .IgnoreThen(
-            Token.EqualTo(SqlToken.Asc).Value(ColumnConstraints.PrimaryKeyAsc)
-            .Or(Token.EqualTo(SqlToken.Desc).Value(ColumnConstraints.PrimaryKeyDesc))
-            .OptionalOrDefault(ColumnConstraints.PrimaryKeyAsc));
+        .IgnoreThen(Token.EqualTo(SqlToken.Asc).Value(Order.Asc)
+            .Or(Token.EqualTo(SqlToken.Desc).Value(Order.Desc))
+            .OptionalOrDefault(Order.Asc))
+        .Then(order => ConcflictClause
+        .Then(resolution => Autoincrement
+        .Select(autoIncrement => new PrimaryKey(
+            order,
+            resolution,
+            autoIncrement))));
 
     internal static readonly TokenListParser<SqlToken, ColumnConstraints> Unique =
         Token.EqualTo(SqlToken.Unique).Value(ColumnConstraints.Unique);
@@ -103,8 +122,9 @@ public static class Ddl
     // todo: need to add foreign key constraint
     internal static readonly TokenListParser<SqlToken, ColumnConstraintKind> ConstraintKind =
         ColumnConstraintName.Then(constraintName =>
-        PrimaryKey
-        .Or(NotNull)
+        //PrimaryKey
+        //.Or(NotNull)
+        NotNull
         .Or(Unique)
         .Or(Check)
         .Or(Default)
@@ -113,20 +133,6 @@ public static class Ddl
         .Or(As)
         .Select(type => new ColumnConstraintKind(constraintName, type)))
         .OptionalOrDefault(ColumnConstraintKind.Default);
-
-    internal static readonly TokenListParser<SqlToken, bool> Autoincrement =
-        Token.EqualTo(SqlToken.Autoincrement).Value(true).OptionalOrDefault(false);
-
-    internal static readonly TokenListParser<SqlToken, ConflictResolutions> ConcflictClause =
-        Token.EqualTo(SqlToken.On)
-        .IgnoreThen(Token.EqualTo(SqlToken.Conflict))
-        .IgnoreThen(
-            Token.EqualTo(SqlToken.Rollback).Value(ConflictResolutions.Rollback)
-            .Or(Token.EqualTo(SqlToken.Abort).Value(ConflictResolutions.Abort))
-            .Or(Token.EqualTo(SqlToken.Fail).Value(ConflictResolutions.Fail))
-            .Or(Token.EqualTo(SqlToken.Ignore).Value(ConflictResolutions.Ignore))
-            .Or(Token.EqualTo(SqlToken.Replace).Value(ConflictResolutions.Replace)))
-        .OptionalOrDefault(ConflictResolutions.Undefined);
 
     internal static readonly TokenListParser<SqlToken, ColumnDef> Column =
         Identifier.Apply(AsString)

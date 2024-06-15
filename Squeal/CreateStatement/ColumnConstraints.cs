@@ -3,8 +3,6 @@
 public enum ColumnConstraints
 {
     Undefined,
-    PrimaryKeyAsc,
-    PrimaryKeyDesc,
     NotNull,
     Unique,
     Check,
