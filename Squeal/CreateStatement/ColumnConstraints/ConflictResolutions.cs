@@ -1,8 +1,8 @@
-﻿namespace Squeal.CreateStatement;
+﻿namespace Squeal.CreateStatement.ColumnConstraints;
 
 public enum ConflictResolutions
 {
-    Undefined,
+    Default,
     Rollback,
     Abort,
     Fail,

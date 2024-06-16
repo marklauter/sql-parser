@@ -1,4 +1,5 @@
 ﻿using Squeal.CreateStatement;
+using Squeal.CreateStatement.ColumnConstraints;
 using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
@@ -7,6 +8,20 @@ namespace Squeal;
 
 public static class Ddl
 {
+    // todo: check, default, generated, as, and foreign key are hard - put them off until later
+    //internal static readonly TokenListParser<SqlToken, ColumnConstraintType> Check =
+    //    Token.EqualTo(SqlToken.Check).Value(ColumnConstraintType.Check);
+
+    //internal static readonly TokenListParser<SqlToken, ColumnConstraintType> Default =
+    //    Token.EqualTo(SqlToken.Default).Value(ColumnConstraintType.Default);
+
+    //internal static readonly TokenListParser<SqlToken, ColumnConstraintType> GeneratedAlways =
+    //    Token.EqualTo(SqlToken.Generated)
+    //    .IgnoreThen(Token.EqualTo(SqlToken.Always).Value(ColumnConstraintType.Generated));
+
+    //internal static readonly TokenListParser<SqlToken, ColumnConstraintType> As =
+    //    Token.EqualTo(SqlToken.As).Value(ColumnConstraintType.As);
+
     internal static readonly TokenListParser<SqlToken, Token<SqlToken>> Comma =
         Token.EqualTo(SqlToken.Comma);
 
@@ -53,32 +68,21 @@ public static class Ddl
         .Or(Token.EqualTo(SqlToken.ColumnTypeBlob).Value(ColumnTypes.BLOB))
         .OptionalOrDefault(ColumnTypes.BLOB);
 
-    internal static readonly TokenListParser<SqlToken, int[]> TypeModifier =
+    internal static readonly TokenListParser<SqlToken, int[]> ColumnTypeModifier =
         LParen
         .IgnoreThen(SignedNumber.ManyDelimitedBy(Comma, RParen)
         .Select(numbers => numbers))
         .OptionalOrDefault([]);
 
-    internal static readonly TokenListParser<SqlToken, TypeName> TypeName =
+    internal static readonly TokenListParser<SqlToken, TypeName> ColumnTypeName =
         ColumnType
-        .Then(type => TypeModifier
+        .Then(type => ColumnTypeModifier
         .Select(modifiers => new TypeName(type, modifiers)));
 
     internal static readonly TokenListParser<SqlToken, string> ColumnConstraintName =
         Token.EqualTo(SqlToken.Constraint)
         .IgnoreThen(Identifier.Apply(AsString))
         .OptionalOrDefault(String.Empty);
-
-    internal static readonly TokenListParser<SqlToken, ColumnConstraints> NotNull =
-        Token.EqualTo(SqlToken.Not)
-        .IgnoreThen(Token.EqualTo(SqlToken.Null).Value(ColumnConstraints.NotNull));
-
-    internal static readonly TokenListParser<SqlToken, ColumnConstraints> GeneratedAlways =
-        Token.EqualTo(SqlToken.Generated)
-        .IgnoreThen(Token.EqualTo(SqlToken.Always).Value(ColumnConstraints.Generated));
-
-    internal static readonly TokenListParser<SqlToken, bool> Autoincrement =
-        Token.EqualTo(SqlToken.Autoincrement).Value(true).OptionalOrDefault(false);
 
     internal static readonly TokenListParser<SqlToken, ConflictResolutions> ConcflictClause =
         Token.EqualTo(SqlToken.On)
@@ -89,9 +93,14 @@ public static class Ddl
             .Or(Token.EqualTo(SqlToken.Fail).Value(ConflictResolutions.Fail))
             .Or(Token.EqualTo(SqlToken.Ignore).Value(ConflictResolutions.Ignore))
             .Or(Token.EqualTo(SqlToken.Replace).Value(ConflictResolutions.Replace)))
-        .OptionalOrDefault(ConflictResolutions.Undefined);
+        .OptionalOrDefault(ConflictResolutions.Default);
 
-    internal static readonly TokenListParser<SqlToken, PrimaryKey> PrimaryKey =
+    internal static readonly TokenListParser<SqlToken, bool> Autoincrement =
+        Token.EqualTo(SqlToken.Autoincrement)
+        .Value(true)
+        .OptionalOrDefault(false);
+
+    internal static TokenListParser<SqlToken, IColumnConstraint> PrimaryKey(string constraintName) =>
         Token.EqualTo(SqlToken.Primary)
         .IgnoreThen(Token.EqualTo(SqlToken.Key))
         .IgnoreThen(Token.EqualTo(SqlToken.Asc).Value(Order.Asc)
@@ -99,45 +108,41 @@ public static class Ddl
             .OptionalOrDefault(Order.Asc))
         .Then(order => ConcflictClause
         .Then(resolution => Autoincrement
-        .Select(autoIncrement => new PrimaryKey(
+        .Select(autoIncrement => (IColumnConstraint)new PrimaryKeyConstraint(
+            constraintName,
             order,
             resolution,
             autoIncrement))));
 
-    internal static readonly TokenListParser<SqlToken, ColumnConstraints> Unique =
-        Token.EqualTo(SqlToken.Unique).Value(ColumnConstraints.Unique);
+    internal static TokenListParser<SqlToken, IColumnConstraint> NotNull(string constraintName) =>
+        Token.EqualTo(SqlToken.Not)
+        .IgnoreThen(Token.EqualTo(SqlToken.Null))
+        .IgnoreThen(ConcflictClause)
+        .Select(resolution => (IColumnConstraint)new NotNullConstraint(constraintName, resolution));
 
-    internal static readonly TokenListParser<SqlToken, ColumnConstraints> Check =
-        Token.EqualTo(SqlToken.Check).Value(ColumnConstraints.Check);
+    internal static TokenListParser<SqlToken, IColumnConstraint> Unique(string constraintName) =>
+        Token.EqualTo(SqlToken.Unique)
+        .IgnoreThen(ConcflictClause)
+        .Select(resolution => (IColumnConstraint)new UniqueConstraint(constraintName, resolution));
 
-    internal static readonly TokenListParser<SqlToken, ColumnConstraints> Default =
-        Token.EqualTo(SqlToken.Default).Value(ColumnConstraints.Default);
+    internal static TokenListParser<SqlToken, IColumnConstraint> Collate(string constraintName) =>
+        Token.EqualTo(SqlToken.Collate)
+        .IgnoreThen(Identifier.Apply(AsString))
+        .Select(identifier => (IColumnConstraint)new CollateConstraint(constraintName, identifier));
 
-    internal static readonly TokenListParser<SqlToken, ColumnConstraints> Collate =
-        Token.EqualTo(SqlToken.Collate).Value(ColumnConstraints.Collate);
-
-    internal static readonly TokenListParser<SqlToken, ColumnConstraints> As =
-        Token.EqualTo(SqlToken.As).Value(ColumnConstraints.As);
-
-    // todo: need to add foreign key constraint
-    internal static readonly TokenListParser<SqlToken, ColumnConstraintKind> ConstraintKind =
-        ColumnConstraintName.Then(constraintName =>
-        //PrimaryKey
-        //.Or(NotNull)
-        NotNull
-        .Or(Unique)
-        .Or(Check)
-        .Or(Default)
-        .Or(Collate)
-        .Or(GeneratedAlways)
-        .Or(As)
-        .Select(type => new ColumnConstraintKind(constraintName, type)))
-        .OptionalOrDefault(ColumnConstraintKind.Default);
+    internal static readonly TokenListParser<SqlToken, IColumnConstraint> ColumnConstraint =
+        ColumnConstraintName.Then(name =>
+            PrimaryKey(name)
+            .Or(NotNull(name))
+            .Or(Unique(name))
+            .Or(Collate(name))
+            .Select(cc => cc));
 
     internal static readonly TokenListParser<SqlToken, ColumnDef> Column =
         Identifier.Apply(AsString)
-        .Then(name => TypeName
-        .Select(type => new ColumnDef(name, type, null)));
+        .Then(name => ColumnTypeName
+        .Then(typeName => ColumnConstraint.Many()
+        .Select(constraints => new ColumnDef(name, typeName, constraints))));
 
     internal static TokenListParser<SqlToken, ColumnDef[]> Columns =
         LParen

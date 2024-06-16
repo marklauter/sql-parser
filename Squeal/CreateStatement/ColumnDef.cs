@@ -1,3 +1,5 @@
-﻿namespace Squeal.CreateStatement;
+﻿using Squeal.CreateStatement.ColumnConstraints;
 
-public record ColumnDef(string Name, TypeName Type, ColumnConstraintKind? Constraint);
+namespace Squeal.CreateStatement;
+
+public record ColumnDef(string Name, TypeName Type, IColumnConstraint[] Constraints);

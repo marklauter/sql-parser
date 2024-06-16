@@ -1,4 +1,5 @@
 using Squeal.CreateStatement;
+using Squeal.CreateStatement.ColumnConstraints;
 using Superpower;
 
 namespace Squeal.Tests;
@@ -42,10 +43,10 @@ public sealed class CreateTableParserTests
     [InlineData("BLOB(1)", ColumnTypes.BLOB, 1)]
     [InlineData("BLOB(1, 2)", ColumnTypes.BLOB, 2)]
     [InlineData("", ColumnTypes.BLOB, 0)]
-    public void TypeNameTest(string ddl, ColumnTypes expectedType, int expectedCount)
+    public void ColumnTypeNameTest(string ddl, ColumnTypes expectedType, int expectedCount)
     {
         var tokens = Sql.Tokenizer.Tokenize(ddl);
-        var result = Ddl.TypeName.TryParse(tokens);
+        var result = Ddl.ColumnTypeName.TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         var typeName = result.Value;
         Assert.Equal(expectedType, typeName.Type);
@@ -63,10 +64,10 @@ public sealed class CreateTableParserTests
 
     [Theory]
     [InlineData("INTEGER(1")]
-    public void TypeNameReturnsUnexpectedEndOfInput(string sql)
+    public void ColumnTypeNameReturnsUnexpectedEndOfInput(string sql)
     {
         var tokens = Sql.Tokenizer.Tokenize(sql);
-        var result = Ddl.TypeName.TryParse(tokens);
+        var result = Ddl.ColumnTypeName.TryParse(tokens);
         Assert.False(result.HasValue, result.ToString());
         Assert.Contains("unexpected end of input", result.ToString(), StringComparison.OrdinalIgnoreCase);
     }
@@ -84,29 +85,81 @@ public sealed class CreateTableParserTests
     }
 
     [Theory]
-    [InlineData("Id TEXT", ColumnTypes.TEXT, 0)]
-    [InlineData("Id TEXT(1)", ColumnTypes.TEXT, 1)]
-    [InlineData("Id TEXT(1, 2)", ColumnTypes.TEXT, 2)]
-    [InlineData("Id NUMERIC", ColumnTypes.NUMERIC, 0)]
-    [InlineData("Id NUMERIC(1)", ColumnTypes.NUMERIC, 1)]
-    [InlineData("Id NUMERIC(1, 2)", ColumnTypes.NUMERIC, 2)]
-    [InlineData("Id NUM", ColumnTypes.NUMERIC, 0)]
-    [InlineData("Id NUM(1)", ColumnTypes.NUMERIC, 1)]
-    [InlineData("Id NUM(1, 2)", ColumnTypes.NUMERIC, 2)]
-    [InlineData("Id INTEGER", ColumnTypes.INTEGER, 0)]
-    [InlineData("Id INTEGER(1)", ColumnTypes.INTEGER, 1)]
-    [InlineData("Id INTEGER(1, 2)", ColumnTypes.INTEGER, 2)]
-    [InlineData("Id INT", ColumnTypes.INTEGER, 0)]
-    [InlineData("Id INT(1)", ColumnTypes.INTEGER, 1)]
-    [InlineData("Id INT(1, 2)", ColumnTypes.INTEGER, 2)]
-    [InlineData("Id REAL", ColumnTypes.REAL, 0)]
-    [InlineData("Id REAL(1)", ColumnTypes.REAL, 1)]
-    [InlineData("Id REAL(1, 2)", ColumnTypes.REAL, 2)]
-    [InlineData("Id BLOB", ColumnTypes.BLOB, 0)]
-    [InlineData("Id BLOB(1)", ColumnTypes.BLOB, 1)]
-    [InlineData("Id BLOB(1, 2)", ColumnTypes.BLOB, 2)]
-    [InlineData("Id", ColumnTypes.BLOB, 0)]
-    public void ColumnTest(string sql, ColumnTypes expectedType, int expectedCount)
+    [InlineData("", ConflictResolutions.Default)]
+    [InlineData("on conflict rollback", ConflictResolutions.Rollback)]
+    [InlineData("on conflict abort", ConflictResolutions.Abort)]
+    [InlineData("on conflict fail", ConflictResolutions.Fail)]
+    [InlineData("on conflict ignore", ConflictResolutions.Ignore)]
+    [InlineData("on conflict replace", ConflictResolutions.Replace)]
+    public void ConflictClauseTest(string ddl, ConflictResolutions expected)
+    {
+        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var result = Ddl.ConcflictClause.TryParse(tokens);
+        Assert.True(result.HasValue, result.ToString());
+        Assert.Equal(expected, result.Value);
+    }
+
+    [Theory]
+    [InlineData("primary key", Order.Asc, ConflictResolutions.Default, false)]
+    [InlineData("primary key asc", Order.Asc, ConflictResolutions.Default, false)]
+    [InlineData("primary key desc", Order.Desc, ConflictResolutions.Default, false)]
+    [InlineData("primary key AUTOINCREMENT", Order.Asc, ConflictResolutions.Default, true)]
+    [InlineData("primary key asc AUTOINCREMENT", Order.Asc, ConflictResolutions.Default, true)]
+    [InlineData("primary key desc AUTOINCREMENT", Order.Desc, ConflictResolutions.Default, true)]
+    [InlineData("primary key desc on conflict rollback autoincrement", Order.Desc, ConflictResolutions.Rollback, true)]
+    [InlineData("primary key desc on conflict abort autoincrement", Order.Desc, ConflictResolutions.Abort, true)]
+    public void PrimaryKeyTest(
+        string ddl,
+        Order expectedOrder,
+        ConflictResolutions expectedResolution,
+        bool expectedAutoInc)
+    {
+        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var result = Ddl.PrimaryKey("pk").TryParse(tokens);
+        Assert.True(result.HasValue, result.ToString());
+        Assert.True(result.Value is PrimaryKeyConstraint);
+        var primaryKey = (PrimaryKeyConstraint)result.Value;
+        Assert.Equal(expectedOrder, primaryKey.Order);
+        Assert.Equal(expectedResolution, primaryKey.Resolution);
+        Assert.Equal(expectedAutoInc, primaryKey.AutoIncrement);
+    }
+
+    public static IEnumerable<object[]> ColumnDefData => new List<object[]>
+    {
+        new object[] { "Id TEXT", ColumnTypes.TEXT, 0, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id TEXT(1)", ColumnTypes.TEXT, 1, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id TEXT(1, 2)", ColumnTypes.TEXT, 2, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id NUMERIC", ColumnTypes.NUMERIC, 0, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id NUMERIC(1)", ColumnTypes.NUMERIC, 1, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id NUMERIC(1, 2)", ColumnTypes.NUMERIC, 2, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id NUM", ColumnTypes.NUMERIC, 0, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id NUM(1)", ColumnTypes.NUMERIC, 1, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id NUM(1, 2)", ColumnTypes.NUMERIC, 2, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id INTEGER", ColumnTypes.INTEGER, 0, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id INTEGER(1)", ColumnTypes.INTEGER, 1, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id INTEGER(1, 2)", ColumnTypes.INTEGER, 2, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id INT", ColumnTypes.INTEGER, 0, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id INT(1)", ColumnTypes.INTEGER, 1, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id INT(1, 2)", ColumnTypes.INTEGER, 2, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id REAL", ColumnTypes.REAL, 0, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id REAL(1)", ColumnTypes.REAL, 1, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id REAL(1, 2)", ColumnTypes.REAL, 2, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id BLOB", ColumnTypes.BLOB, 0, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id BLOB(1)", ColumnTypes.BLOB, 1, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id BLOB(1, 2)", ColumnTypes.BLOB, 2, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id", ColumnTypes.BLOB, 0, Array.Empty<IColumnConstraint>() },
+        new object[] { "Id integer primary key autoincrement", ColumnTypes.INTEGER, 0, new IColumnConstraint[] { PrimaryKeyConstraint.Default() } },
+        new object[] { "Id integer constraint pk primary key autoincrement", ColumnTypes.INTEGER, 0, new IColumnConstraint[] { PrimaryKeyConstraint.Default("pk") } },
+        new object[] { "Id integer constraint pk primary key desc on conflict rollback autoincrement", ColumnTypes.INTEGER, 0, new IColumnConstraint[] { new PrimaryKeyConstraint("pk", Order.Desc, ConflictResolutions.Rollback, true) } },
+        new object[] { "Id integer unique on conflict abort", ColumnTypes.INTEGER, 0, new IColumnConstraint[] { new UniqueConstraint(String.Empty, ConflictResolutions.Abort) } },
+        new object[] { "Id integer constraint id_u1 unique on conflict rollback", ColumnTypes.INTEGER, 0, new IColumnConstraint[] { new UniqueConstraint("id_u1", ConflictResolutions.Rollback) } },
+        new object[] { "Id integer constraint id_u1 unique", ColumnTypes.INTEGER, 0, new IColumnConstraint[] { new UniqueConstraint("id_u1", ConflictResolutions.Default) } },
+        new object[] { "Id int constraint pk primary key autoincrement not null", ColumnTypes.INTEGER, 0, new IColumnConstraint[] { PrimaryKeyConstraint.Default("pk"), NotNullConstraint.Default() } },
+    };
+
+    [Theory]
+    [MemberData(nameof(ColumnDefData))]
+    public void ColumnTest(string sql, ColumnTypes expectedType, int expectedModifierCount, IColumnConstraint[] expectedConstraints)
     {
         var tokens = Sql.Tokenizer.Tokenize(sql);
         var result = Ddl.Column.TryParse(tokens);
@@ -117,15 +170,22 @@ public sealed class CreateTableParserTests
         Assert.NotNull(column.Type);
         var typeName = column.Type;
         Assert.Equal(expectedType, typeName.Type);
-        Assert.Equal(expectedCount, typeName.Modifier.Length);
-        if (expectedCount > 0)
+
+        Assert.Equal(expectedModifierCount, typeName.Modifier.Length);
+        if (expectedModifierCount > 0)
         {
             Assert.Equal(1, typeName.Modifier.First());
         }
 
-        if (expectedCount > 1)
+        if (expectedModifierCount > 1)
         {
             Assert.Equal(2, typeName.Modifier.Last());
+        }
+
+        Assert.Equal(expectedConstraints.Length, column.Constraints.Length);
+        if (expectedConstraints.Length > 0)
+        {
+            Assert.Equivalent(expectedConstraints, column.Constraints);
         }
     }
 
@@ -149,56 +209,5 @@ public sealed class CreateTableParserTests
         Assert.Equal(ColumnTypes.INTEGER, columns[0].Type?.Type);
         Assert.Equal(ColumnTypes.TEXT, columns[1].Type?.Type);
         Assert.Equal(ColumnTypes.NUMERIC, columns[2].Type?.Type);
-    }
-
-    [Theory]
-    //[InlineData("primary key", "", ColumnConstraints.PrimaryKeyAsc)]
-    //[InlineData("CONSTRAINT cname primary key", "cname", ColumnConstraints.PrimaryKeyAsc)]
-    //[InlineData("primary key asc", "", ColumnConstraints.PrimaryKeyAsc)]
-    //[InlineData("CONSTRAINT cname primary key asc", "cname", ColumnConstraints.PrimaryKeyAsc)]
-    //[InlineData("primary key desc", "", ColumnConstraints.PrimaryKeyDesc)]
-    //[InlineData("CONSTRAINT cname primary key desc", "cname", ColumnConstraints.PrimaryKeyDesc)]
-    [InlineData("not null", "", ColumnConstraints.NotNull)]
-    [InlineData("CONSTRAINT cname not null", "cname", ColumnConstraints.NotNull)]
-    [InlineData("unique", "", ColumnConstraints.Unique)]
-    [InlineData("CONSTRAINT cname unique", "cname", ColumnConstraints.Unique)]
-    [InlineData("check", "", ColumnConstraints.Check)]
-    [InlineData("CONSTRAINT cname check", "cname", ColumnConstraints.Check)]
-    [InlineData("default", "", ColumnConstraints.Default)]
-    [InlineData("CONSTRAINT cname default", "cname", ColumnConstraints.Default)]
-    [InlineData("collate", "", ColumnConstraints.Collate)]
-    [InlineData("CONSTRAINT cname collate", "cname", ColumnConstraints.Collate)]
-    [InlineData("generated always", "", ColumnConstraints.Generated)]
-    [InlineData("CONSTRAINT cname generated always", "cname", ColumnConstraints.Generated)]
-    public void ColumnConstraintKindTest(string ddl, string expectedName, ColumnConstraints expectedType)
-    {
-        var tokens = Sql.Tokenizer.Tokenize(ddl);
-        var result = Ddl.ConstraintKind.TryParse(tokens);
-        Assert.True(result.HasValue, result.ToString());
-        var constraint = result.Value;
-        Assert.Equal(expectedName, constraint.Name);
-        Assert.Equal(expectedType, constraint.Type);
-    }
-
-    [Theory]
-    [InlineData("primary key", Order.Asc, ConflictResolutions.Undefined, false)]
-    [InlineData("primary key asc", Order.Asc, ConflictResolutions.Undefined, false)]
-    [InlineData("primary key desc", Order.Desc, ConflictResolutions.Undefined, false)]
-    [InlineData("primary key AUTOINCREMENT", Order.Asc, ConflictResolutions.Undefined, true)]
-    [InlineData("primary key asc AUTOINCREMENT", Order.Asc, ConflictResolutions.Undefined, true)]
-    [InlineData("primary key desc AUTOINCREMENT", Order.Desc, ConflictResolutions.Undefined, true)]
-    public void PrimaryKeyTest(
-        string ddl,
-        Order expectedOrder,
-        ConflictResolutions expectedResolution,
-        bool expectedAutoInc)
-    {
-        var tokens = Sql.Tokenizer.Tokenize(ddl);
-        var result = Ddl.PrimaryKey.TryParse(tokens);
-        Assert.True(result.HasValue, result.ToString());
-        var primaryKey = result.Value;
-        Assert.Equal(expectedOrder, primaryKey.Order);
-        Assert.Equal(expectedResolution, primaryKey.Resolution);
-        Assert.Equal(expectedAutoInc, primaryKey.AutoIncrement);
     }
 }
