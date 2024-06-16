@@ -10,7 +10,7 @@ public sealed class CreateTableParserTests
     [ClassData(typeof(DdlTestData))]
     public void CreateTableStatementTest(string ddl, bool isTemp, bool ifNotExists, string tableName, string? schema)
     {
-        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var tokens = Ddl.Tokenizer.Tokenize(ddl);
         var result = Ddl.CreateTableStatement.TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         var statement = result.Value;
@@ -45,7 +45,7 @@ public sealed class CreateTableParserTests
     [InlineData("", ColumnTypes.BLOB, 0)]
     public void ColumnTypeNameTest(string ddl, ColumnTypes expectedType, int expectedCount)
     {
-        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var tokens = Ddl.Tokenizer.Tokenize(ddl);
         var result = Ddl.ColumnTypeName.TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         var typeName = result.Value;
@@ -66,7 +66,7 @@ public sealed class CreateTableParserTests
     [InlineData("INTEGER(1")]
     public void ColumnTypeNameReturnsUnexpectedEndOfInput(string sql)
     {
-        var tokens = Sql.Tokenizer.Tokenize(sql);
+        var tokens = Ddl.Tokenizer.Tokenize(sql);
         var result = Ddl.ColumnTypeName.TryParse(tokens);
         Assert.False(result.HasValue, result.ToString());
         Assert.Contains("unexpected end of input", result.ToString(), StringComparison.OrdinalIgnoreCase);
@@ -78,7 +78,7 @@ public sealed class CreateTableParserTests
     [InlineData("temporary", true)]
     public void IsTemporaryTest(string ddl, bool isTemp)
     {
-        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var tokens = Ddl.Tokenizer.Tokenize(ddl);
         var result = Ddl.IsTemporary.TryParse(tokens);
         Assert.True(result.HasValue, "result.HasValue");
         Assert.Equal(isTemp, result.Value);
@@ -93,7 +93,7 @@ public sealed class CreateTableParserTests
     [InlineData("on conflict replace", ConflictResolutions.Replace)]
     public void ConflictClauseTest(string ddl, ConflictResolutions expected)
     {
-        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var tokens = Ddl.Tokenizer.Tokenize(ddl);
         var result = Ddl.ConcflictClause.TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         Assert.Equal(expected, result.Value);
@@ -114,7 +114,7 @@ public sealed class CreateTableParserTests
         ConflictResolutions expectedResolution,
         bool expectedAutoInc)
     {
-        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var tokens = Ddl.Tokenizer.Tokenize(ddl);
         var result = Ddl.PrimaryKey("pk").TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         Assert.True(result.Value is PrimaryKeyConstraint);
@@ -161,7 +161,7 @@ public sealed class CreateTableParserTests
     [MemberData(nameof(ColumnDefData))]
     public void ColumnTest(string sql, ColumnTypes expectedType, int expectedModifierCount, IColumnConstraint[] expectedConstraints)
     {
-        var tokens = Sql.Tokenizer.Tokenize(sql);
+        var tokens = Ddl.Tokenizer.Tokenize(sql);
         var result = Ddl.Column.TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         var column = result.Value;
@@ -198,7 +198,7 @@ public sealed class CreateTableParserTests
     [InlineData("(id integer, name text, color num)")]
     public void ColumnsTest(string ddl)
     {
-        var tokens = Sql.Tokenizer.Tokenize(ddl);
+        var tokens = Ddl.Tokenizer.Tokenize(ddl);
         var result = Ddl.Columns.TryParse(tokens);
         Assert.True(result.HasValue, result.ToString());
         var columns = result.Value;
