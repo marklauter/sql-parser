@@ -1,6 +1,6 @@
 ﻿namespace Squeal;
 
-public enum SqlToken
+public enum DdlToken
 {
     False,
     True,
