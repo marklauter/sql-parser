@@ -11,4 +11,5 @@ A C# SQLite SQL and DDL parser built with [Superpower](https://github.com/datalu
 - 2024 JUN 11 - The next step is the simplest select statement. That should be enough to complete the next stage of the Code Crafters challenge.
 - 2024 JUN 11 - Switched to the Superpower tokenizer. This saves the hassle of manually skipping whitespace. The library builds again. Tests are unorganized.
 - 2024 JUN 12 - Library builds and tests are organized. Finished simple column DDL parser. The next step is to add `column-constraint` to the column parser. I'm almost finished with a simple version of [create-table-stmt](https://www.sqlite.org/syntax/create-table-stmt.html).
+- 2024 JUN 16 - Simple create table parse complete. Check, default, generated, and foreign key constraints, and as [seelect], might not be required for the Code Crafters challenge, so I'm deferring their implementation. Same with table constraints and table options.
 </div>
