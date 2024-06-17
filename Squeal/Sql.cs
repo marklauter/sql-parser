@@ -3,12 +3,30 @@ using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
 using Superpower.Tokenizers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Squeal;
 
 internal static class Sql
 {
-    public enum SelectToken
+    public static bool TryParse(string sql, [NotNullWhen(true)] out SelectStatement? statement)
+    {
+        statement = null;
+        var tokens = Tokenizer.TryTokenize(sql);
+        if (tokens.HasValue)
+        {
+            var result = SelectStatement.TryParse(tokens.Value);
+            if (result.HasValue)
+            {
+                statement = result.Value;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    internal enum SelectToken
     {
         False,
         True,
@@ -34,7 +52,7 @@ internal static class Sql
         Window,
     }
 
-    public static readonly Tokenizer<SelectToken> Tokenizer = new TokenizerBuilder<SelectToken>()
+    internal static readonly Tokenizer<SelectToken> Tokenizer = new TokenizerBuilder<SelectToken>()
         .Ignore(Span.WhiteSpace)
         .Match(Character.EqualTo('('), SelectToken.LParen)
         .Match(Character.EqualTo(')'), SelectToken.RParen)
@@ -102,7 +120,7 @@ internal static class Sql
         ResultColumn.ManyDelimitedBy(Comma)
         .OptionalOrDefault([]);
 
-    public static readonly TokenListParser<SelectToken, SelectStatement> SelectStatement =
+    internal static readonly TokenListParser<SelectToken, SelectStatement> SelectStatement =
         Token.EqualTo(SelectToken.Select)
         .IgnoreThen(Columns
             .Then(columns => From
