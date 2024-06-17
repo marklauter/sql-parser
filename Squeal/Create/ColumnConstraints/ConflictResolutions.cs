@@ -1,4 +1,4 @@
-﻿namespace Squeal.CreateStatement.ColumnConstraints;
+﻿namespace Squeal.Create.ColumnConstraints;
 
 public enum ConflictResolutions
 {

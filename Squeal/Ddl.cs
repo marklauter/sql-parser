@@ -1,5 +1,5 @@
-﻿using Squeal.CreateStatement;
-using Squeal.CreateStatement.ColumnConstraints;
+﻿using Squeal.Create;
+using Squeal.Create.ColumnConstraints;
 using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
@@ -9,6 +9,85 @@ namespace Squeal;
 
 public static class Ddl
 {
+    public enum DdlToken
+    {
+        False,
+        True,
+        LParen,
+        RParen,
+        Comma,
+        Dot,
+        Create,
+        Trigger,
+        View,
+        Index,
+        Table,
+        IsTemporary,
+        Identifier,
+        TableName,
+        Exists,
+        Not,
+        If,
+        As,
+        SignedNumber,
+        Constraint,
+        Primary,
+        Key,
+        Unique,
+        Check,
+        Foreign,
+        Null,
+        Default,
+        Collate,
+        Generated,
+        Always,
+        Stored,
+        Virtual,
+        Asc,
+        Desc,
+        CurrentTime,
+        CurrentDate,
+        CurrentTimestamp,
+        Autoincrement,
+        On,
+        Conflict,
+        Rollback,
+        Abort,
+        Fail,
+        Ignore,
+        Replace,
+        From,
+        Distinct,
+        Between,
+        References,
+        Set,
+        Cascade,
+        Delete,
+        No,
+        Action,
+        Match,
+        Deferrable,
+        Initially,
+        Deferred,
+        Immediate,
+        Restrict,
+        Cast,
+        Like,
+        IsNull,
+        NotNull,
+        In,
+        Case,
+        When,
+        Then,
+        Else,
+        End,
+        ColumnTypeText,
+        ColumnTypeNumeric,
+        ColumnTypeInteger,
+        ColumnTypeReal,
+        ColumnTypeBlob,
+    }
+
     public static readonly Tokenizer<DdlToken> Tokenizer = new TokenizerBuilder<DdlToken>()
         .Ignore(Span.WhiteSpace)
         .Match(Character.EqualTo('('), DdlToken.LParen)
@@ -113,9 +192,6 @@ public static class Ddl
     internal static readonly TokenListParser<DdlToken, Token<DdlToken>> Identifier =
         Token.EqualTo(DdlToken.Identifier);
 
-    internal static readonly TextParser<string> AsString = input =>
-        Result.Value(input.ToString(), input, input.Skip(input.Length));
-
     internal static readonly TokenListParser<DdlToken, bool> IsTemporary =
         Token.EqualTo(DdlToken.IsTemporary).Value(true).OptionalOrDefault(false);
 
@@ -132,9 +208,9 @@ public static class Ddl
         .Value(true).OptionalOrDefault(false);
 
     internal static readonly TokenListParser<DdlToken, TableName> TableName =
-        Identifier.Apply(AsString)
+        Identifier.Apply(Parse.AsString)
         .Then(firstIdentifier => HasDot
-        .Then(hasDot => Identifier.Apply(AsString).OptionalOrDefault(String.Empty)
+        .Then(hasDot => Identifier.Apply(Parse.AsString).OptionalOrDefault(String.Empty)
         .Select(secondIdentifier => hasDot
             ? new TableName(secondIdentifier, firstIdentifier)
             : new TableName(firstIdentifier, null))));
@@ -160,7 +236,7 @@ public static class Ddl
 
     internal static readonly TokenListParser<DdlToken, string> ColumnConstraintName =
         Token.EqualTo(DdlToken.Constraint)
-        .IgnoreThen(Identifier.Apply(AsString))
+        .IgnoreThen(Identifier.Apply(Parse.AsString))
         .OptionalOrDefault(String.Empty);
 
     internal static readonly TokenListParser<DdlToken, ConflictResolutions> ConcflictClause =
@@ -206,7 +282,7 @@ public static class Ddl
 
     internal static TokenListParser<DdlToken, IColumnConstraint> Collate(string constraintName) =>
         Token.EqualTo(DdlToken.Collate)
-        .IgnoreThen(Identifier.Apply(AsString))
+        .IgnoreThen(Identifier.Apply(Parse.AsString))
         .Select(identifier => (IColumnConstraint)new CollateConstraint(constraintName, identifier));
 
     internal static readonly TokenListParser<DdlToken, IColumnConstraint> ColumnConstraint =
@@ -218,7 +294,7 @@ public static class Ddl
             .Select(cc => cc));
 
     internal static readonly TokenListParser<DdlToken, ColumnDef> Column =
-        Identifier.Apply(AsString)
+        Identifier.Apply(Parse.AsString)
         .Then(name => ColumnTypeName
         .Then(typeName => ColumnConstraint.Many()
         .Select(constraints => new ColumnDef(name, typeName, constraints))));

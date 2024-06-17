@@ -1,10 +1,10 @@
-using Squeal.CreateStatement;
-using Squeal.CreateStatement.ColumnConstraints;
+﻿using Squeal.Create;
+using Squeal.Create.ColumnConstraints;
 using Superpower;
 
 namespace Squeal.Tests;
 
-public sealed class CreateTableParserTests
+public sealed class CreateTableStatementParserTests
 {
     [Theory]
     [ClassData(typeof(DdlTestData))]

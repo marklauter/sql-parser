@@ -1,4 +1,4 @@
-﻿namespace Squeal.CreateStatement.ColumnConstraints;
+﻿namespace Squeal.Create.ColumnConstraints;
 
 public sealed record NotNullConstraint(string Name, ConflictResolutions Resolution)
     : ColumnConstraint(Name)
