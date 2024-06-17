@@ -33,6 +33,7 @@ internal static class Sql
         LParen,
         RParen,
         Comma,
+        Count,
         Dot,
         Star,
         All,
@@ -62,6 +63,7 @@ internal static class Sql
         .Match(Span.EqualToIgnoreCase("ALL"), SelectToken.All, true)
         .Match(Span.EqualToIgnoreCase("AS"), SelectToken.As, true)
         .Match(Span.EqualToIgnoreCase("BY"), SelectToken.By, true)
+        .Match(Span.EqualToIgnoreCase("COUNT"), SelectToken.Count, true)
         .Match(Span.EqualToIgnoreCase("DISTINCT"), SelectToken.Distinct, true)
         .Match(Span.EqualToIgnoreCase("FROM"), SelectToken.From, true)
         .Match(Span.EqualToIgnoreCase("GROUP"), SelectToken.Group, true)

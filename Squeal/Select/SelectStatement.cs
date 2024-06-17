@@ -1,3 +1,4 @@
 ﻿namespace Squeal.Select;
 
-public record SelectStatement(TableName TableName, ResultColumn[] Columns);
+public record SelectStatement(TableName TableName, ResultColumn[] Columns)
+    : ISelectStatement;
