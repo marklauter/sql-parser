@@ -3,30 +3,18 @@ using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
 using Superpower.Tokenizers;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Squeal;
 
 internal static class Sql
 {
-    public static bool TryParse(string sql, [NotNullWhen(true)] out SelectStatement? statement)
+    public static TokenListParserResult<SelectToken, ISelectStatement> TryParse(string sql)
     {
-        statement = null;
-        var tokens = Tokenizer.TryTokenize(sql);
-        if (tokens.HasValue)
-        {
-            var result = SelectStatement.TryParse(tokens.Value);
-            if (result.HasValue)
-            {
-                statement = result.Value;
-                return true;
-            }
-        }
-
-        return false;
+        var tokens = Tokenizer.Tokenize(sql);
+        return SelectStatement.TryParse(tokens);
     }
 
-    internal enum SelectToken
+    public enum SelectToken
     {
         False,
         True,
@@ -95,6 +83,9 @@ internal static class Sql
     internal static readonly TokenListParser<SelectToken, Token<SelectToken>> Identifier =
         Token.EqualTo(SelectToken.Identifier);
 
+    internal static readonly TokenListParser<SelectToken, Token<SelectToken>> Star =
+        Token.EqualTo(SelectToken.Star);
+
     internal static readonly TokenListParser<SelectToken, Token<SelectToken>> Distinct =
         Token.EqualTo(SelectToken.Distinct);
 
@@ -112,6 +103,7 @@ internal static class Sql
 
     internal static readonly TokenListParser<SelectToken, ResultColumn> ResultColumn =
         Identifier.Apply(Parse.AsString)
+        .Or(Star.Apply(Parse.AsString))
         .Then(firstIdentifier => HasDot
         .Then(hasDot => Identifier.Apply(Parse.AsString).OptionalOrDefault(String.Empty)
         .Select(secondIdentifier => hasDot
@@ -122,10 +114,17 @@ internal static class Sql
         ResultColumn.ManyDelimitedBy(Comma)
         .OptionalOrDefault([]);
 
-    internal static readonly TokenListParser<SelectToken, SelectStatement> SelectStatement =
+    internal static readonly TokenListParser<SelectToken, Token<SelectToken>> Count =
+        Token.EqualTo(SelectToken.Count)
+        .IgnoreThen(LParen)
+        .IgnoreThen(Star)
+        .IgnoreThen(RParen);
+
+    internal static readonly TokenListParser<SelectToken, ISelectStatement> SelectStatement =
         Token.EqualTo(SelectToken.Select)
         .IgnoreThen(Columns
             .Then(columns => From
-            .Select(table => new SelectStatement(table, columns))));
-
+                .Select(table => (ISelectStatement)new SelectStatement(table, columns)))
+            .Or(Count.IgnoreThen(From
+                .Select(table => (ISelectStatement)new SelectCountStatement(table)))));
 }

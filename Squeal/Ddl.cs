@@ -4,30 +4,18 @@ using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
 using Superpower.Tokenizers;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Squeal;
 
 public static class Ddl
 {
-    public static bool TryParse(string ddl, [NotNullWhen(true)] out CreateTableStatement? statement)
+    public static TokenListParserResult<DdlToken, CreateTableStatement> TryParse(string ddl)
     {
-        statement = null;
         var tokens = Tokenizer.TryTokenize(ddl);
-        if (tokens.HasValue)
-        {
-            var result = CreateTableStatement.TryParse(tokens.Value);
-            if (result.HasValue)
-            {
-                statement = result.Value;
-                return true;
-            }
-        }
-
-        return false;
+        return CreateTableStatement.TryParse(tokens.Value);
     }
 
-    internal enum DdlToken
+    public enum DdlToken
     {
         False,
         True,

@@ -10,8 +10,7 @@ public sealed class CreateTableStatementParserTests
     [ClassData(typeof(DdlTestData))]
     public void CreateTableStatementTest(string ddl, bool isTemp, bool ifNotExists, string tableName, string? schema)
     {
-        var tokens = Ddl.Tokenizer.Tokenize(ddl);
-        var result = Ddl.CreateTableStatement.TryParse(tokens);
+        var result = Ddl.TryParse(ddl);
         Assert.True(result.HasValue, result.ToString());
         var statement = result.Value;
         Assert.Equal(isTemp, statement.IsTemp);
