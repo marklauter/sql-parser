@@ -4,12 +4,30 @@ using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
 using Superpower.Tokenizers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Squeal;
 
 public static class Ddl
 {
-    public enum DdlToken
+    public static bool TryParse(string ddl, [NotNullWhen(true)] out CreateTableStatement? statement)
+    {
+        statement = null;
+        var tokens = Tokenizer.TryTokenize(ddl);
+        if (tokens.HasValue)
+        {
+            var result = CreateTableStatement.TryParse(tokens.Value);
+            if (result.HasValue)
+            {
+                statement = result.Value;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    internal enum DdlToken
     {
         False,
         True,
@@ -88,7 +106,7 @@ public static class Ddl
         ColumnTypeBlob,
     }
 
-    public static readonly Tokenizer<DdlToken> Tokenizer = new TokenizerBuilder<DdlToken>()
+    internal static readonly Tokenizer<DdlToken> Tokenizer = new TokenizerBuilder<DdlToken>()
         .Ignore(Span.WhiteSpace)
         .Match(Character.EqualTo('('), DdlToken.LParen)
         .Match(Character.EqualTo(')'), DdlToken.RParen)
@@ -305,7 +323,7 @@ public static class Ddl
         .Select(columns => columns)
         .OptionalOrDefault([]);
 
-    public static readonly TokenListParser<DdlToken, CreateTableStatement> CreateTableStatement =
+    internal static readonly TokenListParser<DdlToken, CreateTableStatement> CreateTableStatement =
         Token.EqualTo(DdlToken.Create)
         .IgnoreThen(IsTemporary)
         .Then(isTemp => Token.EqualTo(DdlToken.Table)
