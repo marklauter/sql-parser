@@ -4,11 +4,18 @@ using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
 using Superpower.Tokenizers;
+using System.Text.RegularExpressions;
 
 namespace Squeal;
 
 public static class Ddl
 {
+    private const RegexOptions PatternOptions =
+        RegexOptions.ExplicitCapture |
+        RegexOptions.Compiled |
+        RegexOptions.Singleline |
+        RegexOptions.CultureInvariant;
+
     public static TokenListParserResult<DdlToken, CreateTableStatement> TryParse(string ddl)
     {
         var tokens = Tokenizer.TryTokenize(ddl);
@@ -169,7 +176,7 @@ public static class Ddl
         .Match(Span.EqualToIgnoreCase("VIEW"), DdlToken.View, true)
         .Match(Span.EqualToIgnoreCase("VIRTUAL"), DdlToken.Virtual, true)
         .Match(Span.EqualToIgnoreCase("WHEN"), DdlToken.When, true)
-        .Match(Span.Regex(@"[a-zA-Z_][a-zA-Z0-9_]*"), DdlToken.Identifier, true)
+        .Match(Span.Regex(@"[a-zA-Z_][a-zA-Z0-9_]*", PatternOptions), DdlToken.Identifier, true)
         .Build();
 
     // todo: check, default, generated, as, and foreign key are hard - put them off until later
