@@ -8,6 +8,12 @@ namespace Squeal;
 
 internal static class Sql
 {
+    public static ISelectStatement Parse(string sql)
+    {
+        var tokens = Tokenizer.Tokenize(sql);
+        return SelectStatement.Parse(tokens);
+    }
+
     public static TokenListParserResult<SelectToken, ISelectStatement> TryParse(string sql)
     {
         var tokens = Tokenizer.Tokenize(sql);
@@ -90,9 +96,9 @@ internal static class Sql
         Token.EqualTo(SelectToken.Distinct);
 
     internal static readonly TokenListParser<SelectToken, TableName> TableName =
-        Identifier.Apply(Parse.AsString)
+        Identifier.Apply(Squeal.Parse.AsString)
         .Then(firstIdentifier => HasDot
-        .Then(hasDot => Identifier.Apply(Parse.AsString).OptionalOrDefault(String.Empty)
+        .Then(hasDot => Identifier.Apply(Squeal.Parse.AsString).OptionalOrDefault(String.Empty)
         .Select(secondIdentifier => hasDot
             ? new TableName(secondIdentifier, firstIdentifier)
             : new TableName(firstIdentifier, null))));
@@ -102,10 +108,10 @@ internal static class Sql
         .IgnoreThen(TableName);
 
     internal static readonly TokenListParser<SelectToken, ResultColumn> ResultColumn =
-        Identifier.Apply(Parse.AsString)
-        .Or(Star.Apply(Parse.AsString))
+        Identifier.Apply(Squeal.Parse.AsString)
+        .Or(Star.Apply(Squeal.Parse.AsString))
         .Then(firstIdentifier => HasDot
-        .Then(hasDot => Identifier.Apply(Parse.AsString).OptionalOrDefault(String.Empty)
+        .Then(hasDot => Identifier.Apply(Squeal.Parse.AsString).OptionalOrDefault(String.Empty)
         .Select(secondIdentifier => hasDot
             ? new ResultColumn(secondIdentifier, firstIdentifier)
             : new ResultColumn(firstIdentifier, null))));

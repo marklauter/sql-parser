@@ -16,6 +16,12 @@ public static class Ddl
         RegexOptions.Singleline |
         RegexOptions.CultureInvariant;
 
+    public static CreateTableStatement Parse(string ddl)
+    {
+        var tokens = Tokenizer.TryTokenize(ddl);
+        return CreateTableStatement.Parse(tokens.Value);
+    }
+
     public static TokenListParserResult<DdlToken, CreateTableStatement> TryParse(string ddl)
     {
         var tokens = Tokenizer.TryTokenize(ddl);
@@ -221,9 +227,9 @@ public static class Ddl
         .Value(true).OptionalOrDefault(false);
 
     internal static readonly TokenListParser<DdlToken, TableName> TableName =
-        Identifier.Apply(Parse.AsString)
+        Identifier.Apply(Squeal.Parse.AsString)
         .Then(firstIdentifier => HasDot
-        .Then(hasDot => Identifier.Apply(Parse.AsString).OptionalOrDefault(String.Empty)
+        .Then(hasDot => Identifier.Apply(Squeal.Parse.AsString).OptionalOrDefault(String.Empty)
         .Select(secondIdentifier => hasDot
             ? new TableName(secondIdentifier, firstIdentifier)
             : new TableName(firstIdentifier, null))));
@@ -249,7 +255,7 @@ public static class Ddl
 
     internal static readonly TokenListParser<DdlToken, string> ColumnConstraintName =
         Token.EqualTo(DdlToken.Constraint)
-        .IgnoreThen(Identifier.Apply(Parse.AsString))
+        .IgnoreThen(Identifier.Apply(Squeal.Parse.AsString))
         .OptionalOrDefault(String.Empty);
 
     internal static readonly TokenListParser<DdlToken, ConflictResolutions> ConcflictClause =
@@ -295,7 +301,7 @@ public static class Ddl
 
     internal static TokenListParser<DdlToken, IColumnConstraint> Collate(string constraintName) =>
         Token.EqualTo(DdlToken.Collate)
-        .IgnoreThen(Identifier.Apply(Parse.AsString))
+        .IgnoreThen(Identifier.Apply(Squeal.Parse.AsString))
         .Select(identifier => (IColumnConstraint)new CollateConstraint(constraintName, identifier));
 
     internal static readonly TokenListParser<DdlToken, IColumnConstraint> ColumnConstraint =
@@ -307,7 +313,7 @@ public static class Ddl
             .Select(cc => cc));
 
     internal static readonly TokenListParser<DdlToken, ColumnDef> Column =
-        Identifier.Apply(Parse.AsString)
+        Identifier.Apply(Squeal.Parse.AsString)
         .Then(name => ColumnTypeName
         .Then(typeName => ColumnConstraint.Many()
         .Select(constraints => new ColumnDef(name, typeName, constraints))));
