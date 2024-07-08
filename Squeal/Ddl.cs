@@ -16,19 +16,13 @@ public static class Ddl
         RegexOptions.Singleline |
         RegexOptions.CultureInvariant;
 
-    public static CreateTableStatement Parse(string ddl)
-    {
-        var tokens = Tokenizer.TryTokenize(ddl);
-        return CreateTableStatement.Parse(tokens.Value);
-    }
+    public static CreateTableStatement Parse(string ddl) =>
+        CreateTableStatement.Parse(Tokenizer.Tokenize(ddl));
 
-    public static TokenListParserResult<DdlToken, CreateTableStatement> TryParse(string ddl)
-    {
-        var tokens = Tokenizer.TryTokenize(ddl);
-        return CreateTableStatement.TryParse(tokens.Value);
-    }
+    public static TokenListParserResult<DdlTokens, CreateTableStatement> TryParse(string ddl) =>
+        CreateTableStatement.TryParse(Tokenizer.Tokenize(ddl));
 
-    public enum DdlToken
+    public enum DdlTokens
     {
         False,
         True,
@@ -107,82 +101,82 @@ public static class Ddl
         ColumnTypeBlob,
     }
 
-    internal static readonly Tokenizer<DdlToken> Tokenizer = new TokenizerBuilder<DdlToken>()
+    internal static readonly Tokenizer<DdlTokens> Tokenizer = new TokenizerBuilder<DdlTokens>()
         .Ignore(Span.WhiteSpace)
-        .Match(Character.EqualTo('('), DdlToken.LParen)
-        .Match(Character.EqualTo(')'), DdlToken.RParen)
-        .Match(Character.EqualTo(','), DdlToken.Comma)
-        .Match(Character.EqualTo('.'), DdlToken.Dot)
-        .Match(Numerics.Integer, DdlToken.SignedNumber)
-        .Match(Span.EqualToIgnoreCase("ABORT"), DdlToken.Abort, true)
-        .Match(Span.EqualToIgnoreCase("ACTION"), DdlToken.Action, true)
-        .Match(Span.EqualToIgnoreCase("ALWAYS"), DdlToken.Always, true)
-        .Match(Span.EqualToIgnoreCase("AS"), DdlToken.As, true)
-        .Match(Span.EqualToIgnoreCase("ASC"), DdlToken.Asc, true)
-        .Match(Span.EqualToIgnoreCase("AUTOINCREMENT"), DdlToken.Autoincrement, true)
-        .Match(Span.EqualToIgnoreCase("BETWEEN"), DdlToken.Between, true)
-        .Match(Span.EqualToIgnoreCase("BLOB"), DdlToken.ColumnTypeBlob, true)
-        .Match(Span.EqualToIgnoreCase("CASCADE"), DdlToken.Cascade, true)
-        .Match(Span.EqualToIgnoreCase("CASE"), DdlToken.Case, true)
-        .Match(Span.EqualToIgnoreCase("CAST"), DdlToken.Cast, true)
-        .Match(Span.EqualToIgnoreCase("CHECK"), DdlToken.Check, true)
-        .Match(Span.EqualToIgnoreCase("COLLATE"), DdlToken.Collate, true)
-        .Match(Span.EqualToIgnoreCase("CONFLICT"), DdlToken.Conflict, true)
-        .Match(Span.EqualToIgnoreCase("CONSTRAINT"), DdlToken.Constraint, true)
-        .Match(Span.EqualToIgnoreCase("CREATE"), DdlToken.Create, true)
-        .Match(Span.EqualToIgnoreCase("CURRENT_DATE"), DdlToken.CurrentDate, true)
-        .Match(Span.EqualToIgnoreCase("CURRENT_TIME"), DdlToken.CurrentTime, true)
-        .Match(Span.EqualToIgnoreCase("CURRENT_TIMESTAMP"), DdlToken.CurrentTimestamp, true)
-        .Match(Span.EqualToIgnoreCase("DEFAULT"), DdlToken.Default, true)
-        .Match(Span.EqualToIgnoreCase("DEFERRABLE"), DdlToken.Deferrable, true)
-        .Match(Span.EqualToIgnoreCase("DEFERRED"), DdlToken.Deferred, true)
-        .Match(Span.EqualToIgnoreCase("DELETE"), DdlToken.Delete, true)
-        .Match(Span.EqualToIgnoreCase("DESC"), DdlToken.Desc, true)
-        .Match(Span.EqualToIgnoreCase("DISTINCT"), DdlToken.Distinct, true)
-        .Match(Span.EqualToIgnoreCase("ELSE"), DdlToken.Else, true)
-        .Match(Span.EqualToIgnoreCase("END"), DdlToken.End, true)
-        .Match(Span.EqualToIgnoreCase("EXISTS"), DdlToken.Exists, true)
-        .Match(Span.EqualToIgnoreCase("FAIL"), DdlToken.Fail, true)
-        .Match(Span.EqualToIgnoreCase("FALSE"), DdlToken.False)
-        .Match(Span.EqualToIgnoreCase("FOREIGN"), DdlToken.Foreign, true)
-        .Match(Span.EqualToIgnoreCase("FROM"), DdlToken.From, true)
-        .Match(Span.EqualToIgnoreCase("GENERATED"), DdlToken.Generated, true)
-        .Match(Span.EqualToIgnoreCase("IF"), DdlToken.If, true)
-        .Match(Span.EqualToIgnoreCase("IGNORE"), DdlToken.Ignore, true)
-        .Match(Span.EqualToIgnoreCase("IMMEDIATE"), DdlToken.Immediate, true)
-        .Match(Span.EqualToIgnoreCase("IN"), DdlToken.In, true)
-        .Match(Span.EqualToIgnoreCase("INDEX"), DdlToken.Index, true)
-        .Match(Span.EqualToIgnoreCase("INITIALLY"), DdlToken.Initially, true)
-        .Match(Span.EqualToIgnoreCase("INTEGER").Try().Or(Span.EqualToIgnoreCase("INT")), DdlToken.ColumnTypeInteger, true)
-        .Match(Span.EqualToIgnoreCase("ISNULL"), DdlToken.IsNull, true)
-        .Match(Span.EqualToIgnoreCase("KEY"), DdlToken.Key, true)
-        .Match(Span.EqualToIgnoreCase("LIKE"), DdlToken.Like, true)
-        .Match(Span.EqualToIgnoreCase("MATCH"), DdlToken.Match, true)
-        .Match(Span.EqualToIgnoreCase("NO"), DdlToken.No, true)
-        .Match(Span.EqualToIgnoreCase("NOT"), DdlToken.Not, true)
-        .Match(Span.EqualToIgnoreCase("NOTNULL"), DdlToken.NotNull, true)
-        .Match(Span.EqualToIgnoreCase("NULL"), DdlToken.Null, true)
-        .Match(Span.EqualToIgnoreCase("NUMERIC").Try().Or(Span.EqualToIgnoreCase("NUM")), DdlToken.ColumnTypeNumeric, true)
-        .Match(Span.EqualToIgnoreCase("ON"), DdlToken.On, true)
-        .Match(Span.EqualToIgnoreCase("PRIMARY"), DdlToken.Primary, true)
-        .Match(Span.EqualToIgnoreCase("REAL"), DdlToken.ColumnTypeReal, true)
-        .Match(Span.EqualToIgnoreCase("REFERENCES"), DdlToken.References, true)
-        .Match(Span.EqualToIgnoreCase("REPLACE"), DdlToken.Replace, true)
-        .Match(Span.EqualToIgnoreCase("RESTRICT"), DdlToken.Restrict, true)
-        .Match(Span.EqualToIgnoreCase("ROLLBACK"), DdlToken.Rollback, true)
-        .Match(Span.EqualToIgnoreCase("SET"), DdlToken.Set, true)
-        .Match(Span.EqualToIgnoreCase("STORED"), DdlToken.Stored, true)
-        .Match(Span.EqualToIgnoreCase("TABLE"), DdlToken.Table, true)
-        .Match(Span.EqualToIgnoreCase("TEMPORARY").Try().Or(Span.EqualToIgnoreCase("TEMP")), DdlToken.IsTemporary, true)
-        .Match(Span.EqualToIgnoreCase("TEXT"), DdlToken.ColumnTypeText, true)
-        .Match(Span.EqualToIgnoreCase("THEN"), DdlToken.Then, true)
-        .Match(Span.EqualToIgnoreCase("TRIGGER"), DdlToken.Trigger, true)
-        .Match(Span.EqualToIgnoreCase("TRUE"), DdlToken.True)
-        .Match(Span.EqualToIgnoreCase("UNIQUE"), DdlToken.Unique, true)
-        .Match(Span.EqualToIgnoreCase("VIEW"), DdlToken.View, true)
-        .Match(Span.EqualToIgnoreCase("VIRTUAL"), DdlToken.Virtual, true)
-        .Match(Span.EqualToIgnoreCase("WHEN"), DdlToken.When, true)
-        .Match(Span.Regex(@"[a-zA-Z_][a-zA-Z0-9_]*", PatternOptions), DdlToken.Identifier, true)
+        .Match(Character.EqualTo('('), DdlTokens.LParen)
+        .Match(Character.EqualTo(')'), DdlTokens.RParen)
+        .Match(Character.EqualTo(','), DdlTokens.Comma)
+        .Match(Character.EqualTo('.'), DdlTokens.Dot)
+        .Match(Numerics.Integer, DdlTokens.SignedNumber)
+        .Match(Span.EqualToIgnoreCase("ABORT"), DdlTokens.Abort, true)
+        .Match(Span.EqualToIgnoreCase("ACTION"), DdlTokens.Action, true)
+        .Match(Span.EqualToIgnoreCase("ALWAYS"), DdlTokens.Always, true)
+        .Match(Span.EqualToIgnoreCase("AS"), DdlTokens.As, true)
+        .Match(Span.EqualToIgnoreCase("ASC"), DdlTokens.Asc, true)
+        .Match(Span.EqualToIgnoreCase("AUTOINCREMENT"), DdlTokens.Autoincrement, true)
+        .Match(Span.EqualToIgnoreCase("BETWEEN"), DdlTokens.Between, true)
+        .Match(Span.EqualToIgnoreCase("BLOB"), DdlTokens.ColumnTypeBlob, true)
+        .Match(Span.EqualToIgnoreCase("CASCADE"), DdlTokens.Cascade, true)
+        .Match(Span.EqualToIgnoreCase("CASE"), DdlTokens.Case, true)
+        .Match(Span.EqualToIgnoreCase("CAST"), DdlTokens.Cast, true)
+        .Match(Span.EqualToIgnoreCase("CHECK"), DdlTokens.Check, true)
+        .Match(Span.EqualToIgnoreCase("COLLATE"), DdlTokens.Collate, true)
+        .Match(Span.EqualToIgnoreCase("CONFLICT"), DdlTokens.Conflict, true)
+        .Match(Span.EqualToIgnoreCase("CONSTRAINT"), DdlTokens.Constraint, true)
+        .Match(Span.EqualToIgnoreCase("CREATE"), DdlTokens.Create, true)
+        .Match(Span.EqualToIgnoreCase("CURRENT_DATE"), DdlTokens.CurrentDate, true)
+        .Match(Span.EqualToIgnoreCase("CURRENT_TIME"), DdlTokens.CurrentTime, true)
+        .Match(Span.EqualToIgnoreCase("CURRENT_TIMESTAMP"), DdlTokens.CurrentTimestamp, true)
+        .Match(Span.EqualToIgnoreCase("DEFAULT"), DdlTokens.Default, true)
+        .Match(Span.EqualToIgnoreCase("DEFERRABLE"), DdlTokens.Deferrable, true)
+        .Match(Span.EqualToIgnoreCase("DEFERRED"), DdlTokens.Deferred, true)
+        .Match(Span.EqualToIgnoreCase("DELETE"), DdlTokens.Delete, true)
+        .Match(Span.EqualToIgnoreCase("DESC"), DdlTokens.Desc, true)
+        .Match(Span.EqualToIgnoreCase("DISTINCT"), DdlTokens.Distinct, true)
+        .Match(Span.EqualToIgnoreCase("ELSE"), DdlTokens.Else, true)
+        .Match(Span.EqualToIgnoreCase("END"), DdlTokens.End, true)
+        .Match(Span.EqualToIgnoreCase("EXISTS"), DdlTokens.Exists, true)
+        .Match(Span.EqualToIgnoreCase("FAIL"), DdlTokens.Fail, true)
+        .Match(Span.EqualToIgnoreCase("FALSE"), DdlTokens.False)
+        .Match(Span.EqualToIgnoreCase("FOREIGN"), DdlTokens.Foreign, true)
+        .Match(Span.EqualToIgnoreCase("FROM"), DdlTokens.From, true)
+        .Match(Span.EqualToIgnoreCase("GENERATED"), DdlTokens.Generated, true)
+        .Match(Span.EqualToIgnoreCase("IF"), DdlTokens.If, true)
+        .Match(Span.EqualToIgnoreCase("IGNORE"), DdlTokens.Ignore, true)
+        .Match(Span.EqualToIgnoreCase("IMMEDIATE"), DdlTokens.Immediate, true)
+        .Match(Span.EqualToIgnoreCase("IN"), DdlTokens.In, true)
+        .Match(Span.EqualToIgnoreCase("INDEX"), DdlTokens.Index, true)
+        .Match(Span.EqualToIgnoreCase("INITIALLY"), DdlTokens.Initially, true)
+        .Match(Span.EqualToIgnoreCase("INTEGER").Try().Or(Span.EqualToIgnoreCase("INT")), DdlTokens.ColumnTypeInteger, true)
+        .Match(Span.EqualToIgnoreCase("ISNULL"), DdlTokens.IsNull, true)
+        .Match(Span.EqualToIgnoreCase("KEY"), DdlTokens.Key, true)
+        .Match(Span.EqualToIgnoreCase("LIKE"), DdlTokens.Like, true)
+        .Match(Span.EqualToIgnoreCase("MATCH"), DdlTokens.Match, true)
+        .Match(Span.EqualToIgnoreCase("NO"), DdlTokens.No, true)
+        .Match(Span.EqualToIgnoreCase("NOT"), DdlTokens.Not, true)
+        .Match(Span.EqualToIgnoreCase("NOTNULL"), DdlTokens.NotNull, true)
+        .Match(Span.EqualToIgnoreCase("NULL"), DdlTokens.Null, true)
+        .Match(Span.EqualToIgnoreCase("NUMERIC").Try().Or(Span.EqualToIgnoreCase("NUM")), DdlTokens.ColumnTypeNumeric, true)
+        .Match(Span.EqualToIgnoreCase("ON"), DdlTokens.On, true)
+        .Match(Span.EqualToIgnoreCase("PRIMARY"), DdlTokens.Primary, true)
+        .Match(Span.EqualToIgnoreCase("REAL"), DdlTokens.ColumnTypeReal, true)
+        .Match(Span.EqualToIgnoreCase("REFERENCES"), DdlTokens.References, true)
+        .Match(Span.EqualToIgnoreCase("REPLACE"), DdlTokens.Replace, true)
+        .Match(Span.EqualToIgnoreCase("RESTRICT"), DdlTokens.Restrict, true)
+        .Match(Span.EqualToIgnoreCase("ROLLBACK"), DdlTokens.Rollback, true)
+        .Match(Span.EqualToIgnoreCase("SET"), DdlTokens.Set, true)
+        .Match(Span.EqualToIgnoreCase("STORED"), DdlTokens.Stored, true)
+        .Match(Span.EqualToIgnoreCase("TABLE"), DdlTokens.Table, true)
+        .Match(Span.EqualToIgnoreCase("TEMPORARY").Try().Or(Span.EqualToIgnoreCase("TEMP")), DdlTokens.IsTemporary, true)
+        .Match(Span.EqualToIgnoreCase("TEXT"), DdlTokens.ColumnTypeText, true)
+        .Match(Span.EqualToIgnoreCase("THEN"), DdlTokens.Then, true)
+        .Match(Span.EqualToIgnoreCase("TRIGGER"), DdlTokens.Trigger, true)
+        .Match(Span.EqualToIgnoreCase("TRUE"), DdlTokens.True)
+        .Match(Span.EqualToIgnoreCase("UNIQUE"), DdlTokens.Unique, true)
+        .Match(Span.EqualToIgnoreCase("VIEW"), DdlTokens.View, true)
+        .Match(Span.EqualToIgnoreCase("VIRTUAL"), DdlTokens.Virtual, true)
+        .Match(Span.EqualToIgnoreCase("WHEN"), DdlTokens.When, true)
+        .Match(Span.Regex(@"[a-zA-Z_][a-zA-Z0-9_]*", PatternOptions), DdlTokens.Identifier, true)
         .Build();
 
     // todo: check, default, generated, as, and foreign key are hard - put them off until later
@@ -199,34 +193,34 @@ public static class Ddl
     //internal static readonly TokenListParser<SqlToken, ColumnConstraintType> As =
     //    Token.EqualTo(SqlToken.As).Value(ColumnConstraintType.As);
 
-    internal static readonly TokenListParser<DdlToken, Token<DdlToken>> Comma =
-        Token.EqualTo(DdlToken.Comma);
+    internal static readonly TokenListParser<DdlTokens, Token<DdlTokens>> Comma =
+        Token.EqualTo(DdlTokens.Comma);
 
-    internal static readonly TokenListParser<DdlToken, Token<DdlToken>> LParen =
-        Token.EqualTo(DdlToken.LParen);
+    internal static readonly TokenListParser<DdlTokens, Token<DdlTokens>> LParen =
+        Token.EqualTo(DdlTokens.LParen);
 
-    internal static readonly TokenListParser<DdlToken, Token<DdlToken>> RParen =
-        Token.EqualTo(DdlToken.RParen);
+    internal static readonly TokenListParser<DdlTokens, Token<DdlTokens>> RParen =
+        Token.EqualTo(DdlTokens.RParen);
 
-    internal static readonly TokenListParser<DdlToken, Token<DdlToken>> Identifier =
-        Token.EqualTo(DdlToken.Identifier);
+    internal static readonly TokenListParser<DdlTokens, Token<DdlTokens>> Identifier =
+        Token.EqualTo(DdlTokens.Identifier);
 
-    internal static readonly TokenListParser<DdlToken, bool> IsTemporary =
-        Token.EqualTo(DdlToken.IsTemporary).Value(true).OptionalOrDefault(false);
+    internal static readonly TokenListParser<DdlTokens, bool> IsTemporary =
+        Token.EqualTo(DdlTokens.IsTemporary).Value(true).OptionalOrDefault(false);
 
-    internal static readonly TokenListParser<DdlToken, bool> HasDot =
-        Token.EqualTo(DdlToken.Dot).Value(true).OptionalOrDefault(false);
+    internal static readonly TokenListParser<DdlTokens, bool> HasDot =
+        Token.EqualTo(DdlTokens.Dot).Value(true).OptionalOrDefault(false);
 
-    internal static readonly TokenListParser<DdlToken, int> SignedNumber =
-        Token.EqualTo(DdlToken.SignedNumber).Apply(Numerics.IntegerInt32);
+    internal static readonly TokenListParser<DdlTokens, int> SignedNumber =
+        Token.EqualTo(DdlTokens.SignedNumber).Apply(Numerics.IntegerInt32);
 
-    internal static readonly TokenListParser<DdlToken, bool> IfNotExists =
-        Token.EqualTo(DdlToken.If)
-        .IgnoreThen(Token.EqualTo(DdlToken.Not))
-        .IgnoreThen(Token.EqualTo(DdlToken.Exists))
+    internal static readonly TokenListParser<DdlTokens, bool> IfNotExists =
+        Token.EqualTo(DdlTokens.If)
+        .IgnoreThen(Token.EqualTo(DdlTokens.Not))
+        .IgnoreThen(Token.EqualTo(DdlTokens.Exists))
         .Value(true).OptionalOrDefault(false);
 
-    internal static readonly TokenListParser<DdlToken, TableName> TableName =
+    internal static readonly TokenListParser<DdlTokens, TableName> TableName =
         Identifier.Apply(Squeal.Parse.AsString)
         .Then(firstIdentifier => HasDot
         .Then(hasDot => Identifier.Apply(Squeal.Parse.AsString).OptionalOrDefault(String.Empty)
@@ -234,51 +228,51 @@ public static class Ddl
             ? new TableName(secondIdentifier, firstIdentifier)
             : new TableName(firstIdentifier, null))));
 
-    internal static readonly TokenListParser<DdlToken, ColumnTypes> ColumnType =
-        Token.EqualTo(DdlToken.ColumnTypeInteger).Value(ColumnTypes.INTEGER)
-        .Or(Token.EqualTo(DdlToken.ColumnTypeText).Value(ColumnTypes.TEXT))
-        .Or(Token.EqualTo(DdlToken.ColumnTypeNumeric).Value(ColumnTypes.NUMERIC))
-        .Or(Token.EqualTo(DdlToken.ColumnTypeReal).Value(ColumnTypes.REAL))
-        .Or(Token.EqualTo(DdlToken.ColumnTypeBlob).Value(ColumnTypes.BLOB))
+    internal static readonly TokenListParser<DdlTokens, ColumnTypes> ColumnType =
+        Token.EqualTo(DdlTokens.ColumnTypeInteger).Value(ColumnTypes.INTEGER)
+        .Or(Token.EqualTo(DdlTokens.ColumnTypeText).Value(ColumnTypes.TEXT))
+        .Or(Token.EqualTo(DdlTokens.ColumnTypeNumeric).Value(ColumnTypes.NUMERIC))
+        .Or(Token.EqualTo(DdlTokens.ColumnTypeReal).Value(ColumnTypes.REAL))
+        .Or(Token.EqualTo(DdlTokens.ColumnTypeBlob).Value(ColumnTypes.BLOB))
         .OptionalOrDefault(ColumnTypes.BLOB);
 
-    internal static readonly TokenListParser<DdlToken, int[]> ColumnTypeModifier =
+    internal static readonly TokenListParser<DdlTokens, int[]> ColumnTypeModifier =
         LParen
         .IgnoreThen(SignedNumber.ManyDelimitedBy(Comma, RParen)
         .Select(numbers => numbers))
         .OptionalOrDefault([]);
 
-    internal static readonly TokenListParser<DdlToken, TypeName> ColumnTypeName =
+    internal static readonly TokenListParser<DdlTokens, TypeName> ColumnTypeName =
         ColumnType
         .Then(type => ColumnTypeModifier
         .Select(modifiers => new TypeName(type, modifiers)));
 
-    internal static readonly TokenListParser<DdlToken, string> ColumnConstraintName =
-        Token.EqualTo(DdlToken.Constraint)
+    internal static readonly TokenListParser<DdlTokens, string> ColumnConstraintName =
+        Token.EqualTo(DdlTokens.Constraint)
         .IgnoreThen(Identifier.Apply(Squeal.Parse.AsString))
         .OptionalOrDefault(String.Empty);
 
-    internal static readonly TokenListParser<DdlToken, ConflictResolutions> ConcflictClause =
-        Token.EqualTo(DdlToken.On)
-        .IgnoreThen(Token.EqualTo(DdlToken.Conflict))
+    internal static readonly TokenListParser<DdlTokens, ConflictResolutions> ConcflictClause =
+        Token.EqualTo(DdlTokens.On)
+        .IgnoreThen(Token.EqualTo(DdlTokens.Conflict))
         .IgnoreThen(
-            Token.EqualTo(DdlToken.Rollback).Value(ConflictResolutions.Rollback)
-            .Or(Token.EqualTo(DdlToken.Abort).Value(ConflictResolutions.Abort))
-            .Or(Token.EqualTo(DdlToken.Fail).Value(ConflictResolutions.Fail))
-            .Or(Token.EqualTo(DdlToken.Ignore).Value(ConflictResolutions.Ignore))
-            .Or(Token.EqualTo(DdlToken.Replace).Value(ConflictResolutions.Replace)))
+            Token.EqualTo(DdlTokens.Rollback).Value(ConflictResolutions.Rollback)
+            .Or(Token.EqualTo(DdlTokens.Abort).Value(ConflictResolutions.Abort))
+            .Or(Token.EqualTo(DdlTokens.Fail).Value(ConflictResolutions.Fail))
+            .Or(Token.EqualTo(DdlTokens.Ignore).Value(ConflictResolutions.Ignore))
+            .Or(Token.EqualTo(DdlTokens.Replace).Value(ConflictResolutions.Replace)))
         .OptionalOrDefault(ConflictResolutions.Default);
 
-    internal static readonly TokenListParser<DdlToken, bool> Autoincrement =
-        Token.EqualTo(DdlToken.Autoincrement)
+    internal static readonly TokenListParser<DdlTokens, bool> Autoincrement =
+        Token.EqualTo(DdlTokens.Autoincrement)
         .Value(true)
         .OptionalOrDefault(false);
 
-    internal static TokenListParser<DdlToken, IColumnConstraint> PrimaryKey(string constraintName) =>
-        Token.EqualTo(DdlToken.Primary)
-        .IgnoreThen(Token.EqualTo(DdlToken.Key))
-        .IgnoreThen(Token.EqualTo(DdlToken.Asc).Value(Order.Asc)
-            .Or(Token.EqualTo(DdlToken.Desc).Value(Order.Desc))
+    internal static TokenListParser<DdlTokens, IColumnConstraint> PrimaryKey(string constraintName) =>
+        Token.EqualTo(DdlTokens.Primary)
+        .IgnoreThen(Token.EqualTo(DdlTokens.Key))
+        .IgnoreThen(Token.EqualTo(DdlTokens.Asc).Value(Order.Asc)
+            .Or(Token.EqualTo(DdlTokens.Desc).Value(Order.Desc))
             .OptionalOrDefault(Order.Asc))
         .Then(order => ConcflictClause
         .Then(resolution => Autoincrement
@@ -288,23 +282,23 @@ public static class Ddl
             resolution,
             autoIncrement))));
 
-    internal static TokenListParser<DdlToken, IColumnConstraint> NotNull(string constraintName) =>
-        Token.EqualTo(DdlToken.Not)
-        .IgnoreThen(Token.EqualTo(DdlToken.Null))
+    internal static TokenListParser<DdlTokens, IColumnConstraint> NotNull(string constraintName) =>
+        Token.EqualTo(DdlTokens.Not)
+        .IgnoreThen(Token.EqualTo(DdlTokens.Null))
         .IgnoreThen(ConcflictClause)
         .Select(resolution => (IColumnConstraint)new NotNullConstraint(constraintName, resolution));
 
-    internal static TokenListParser<DdlToken, IColumnConstraint> Unique(string constraintName) =>
-        Token.EqualTo(DdlToken.Unique)
+    internal static TokenListParser<DdlTokens, IColumnConstraint> Unique(string constraintName) =>
+        Token.EqualTo(DdlTokens.Unique)
         .IgnoreThen(ConcflictClause)
         .Select(resolution => (IColumnConstraint)new UniqueConstraint(constraintName, resolution));
 
-    internal static TokenListParser<DdlToken, IColumnConstraint> Collate(string constraintName) =>
-        Token.EqualTo(DdlToken.Collate)
+    internal static TokenListParser<DdlTokens, IColumnConstraint> Collate(string constraintName) =>
+        Token.EqualTo(DdlTokens.Collate)
         .IgnoreThen(Identifier.Apply(Squeal.Parse.AsString))
         .Select(identifier => (IColumnConstraint)new CollateConstraint(constraintName, identifier));
 
-    internal static readonly TokenListParser<DdlToken, IColumnConstraint> ColumnConstraint =
+    internal static readonly TokenListParser<DdlTokens, IColumnConstraint> ColumnConstraint =
         ColumnConstraintName.Then(name =>
             PrimaryKey(name)
             .Or(NotNull(name))
@@ -312,22 +306,22 @@ public static class Ddl
             .Or(Collate(name))
             .Select(cc => cc));
 
-    internal static readonly TokenListParser<DdlToken, ColumnDef> Column =
+    internal static readonly TokenListParser<DdlTokens, ColumnDef> Column =
         Identifier.Apply(Squeal.Parse.AsString)
         .Then(name => ColumnTypeName
         .Then(typeName => ColumnConstraint.Many()
         .Select(constraints => new ColumnDef(name, typeName, constraints))));
 
-    internal static TokenListParser<DdlToken, ColumnDef[]> Columns =
+    internal static TokenListParser<DdlTokens, ColumnDef[]> Columns =
         LParen
         .IgnoreThen(Column.ManyDelimitedBy(Comma, RParen))
         .Select(columns => columns)
         .OptionalOrDefault([]);
 
-    internal static readonly TokenListParser<DdlToken, CreateTableStatement> CreateTableStatement =
-        Token.EqualTo(DdlToken.Create)
+    internal static readonly TokenListParser<DdlTokens, CreateTableStatement> CreateTableStatement =
+        Token.EqualTo(DdlTokens.Create)
         .IgnoreThen(IsTemporary)
-        .Then(isTemp => Token.EqualTo(DdlToken.Table)
+        .Then(isTemp => Token.EqualTo(DdlTokens.Table)
         .IgnoreThen(IfNotExists)
         .Then(ifNotExists => TableName
         .Then(name => Columns

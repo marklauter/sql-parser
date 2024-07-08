@@ -1,4 +1,5 @@
 ﻿using Squeal.Select;
+using Squeal.Select.Expressions;
 using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
@@ -8,19 +9,13 @@ namespace Squeal;
 
 internal static class Sql
 {
-    public static ISelectStatement Parse(string sql)
-    {
-        var tokens = Tokenizer.Tokenize(sql);
-        return SelectStatement.Parse(tokens);
-    }
+    public static ISelectStatement Parse(string sql) =>
+        SelectStatement.Parse(Tokenizer.Tokenize(sql));
 
-    public static TokenListParserResult<SelectToken, ISelectStatement> TryParse(string sql)
-    {
-        var tokens = Tokenizer.Tokenize(sql);
-        return SelectStatement.TryParse(tokens);
-    }
+    public static TokenListParserResult<SelectTokens, ISelectStatement> TryParse(string sql) =>
+        SelectStatement.TryParse(Tokenizer.Tokenize(sql));
 
-    public enum SelectToken
+    public enum SelectTokens
     {
         False,
         True,
@@ -45,57 +40,78 @@ internal static class Sql
         Values,
         Where,
         Window,
+        StringLiteral,
+        // binary operators
+        EqualTo,
+        NotEqualTo,
+        GreaterThan,
+        GreaterThanOrEqualTo,
+        LessThan,
+        LessThanOrEqualTo,
+        Or,
+        And,
+        // 
     }
 
-    internal static readonly Tokenizer<SelectToken> Tokenizer = new TokenizerBuilder<SelectToken>()
+    internal static readonly Tokenizer<SelectTokens> Tokenizer = new TokenizerBuilder<SelectTokens>()
         .Ignore(Span.WhiteSpace)
-        .Match(Character.EqualTo('('), SelectToken.LParen)
-        .Match(Character.EqualTo(')'), SelectToken.RParen)
-        .Match(Character.EqualTo(','), SelectToken.Comma)
-        .Match(Character.EqualTo('.'), SelectToken.Dot)
-        .Match(Character.EqualTo('*'), SelectToken.Star)
-        .Match(Span.EqualToIgnoreCase("ALL"), SelectToken.All, true)
-        .Match(Span.EqualToIgnoreCase("AS"), SelectToken.As, true)
-        .Match(Span.EqualToIgnoreCase("BY"), SelectToken.By, true)
-        .Match(Span.EqualToIgnoreCase("COUNT"), SelectToken.Count, true)
-        .Match(Span.EqualToIgnoreCase("DISTINCT"), SelectToken.Distinct, true)
-        .Match(Span.EqualToIgnoreCase("FROM"), SelectToken.From, true)
-        .Match(Span.EqualToIgnoreCase("GROUP"), SelectToken.Group, true)
-        .Match(Span.EqualToIgnoreCase("HAVING"), SelectToken.Having, true)
-        .Match(Span.EqualToIgnoreCase("LIMIT"), SelectToken.Limit, true)
-        .Match(Span.EqualToIgnoreCase("OFFSET"), SelectToken.Offset, true)
-        .Match(Span.EqualToIgnoreCase("ORDER"), SelectToken.Order, true)
-        .Match(Span.EqualToIgnoreCase("SELECT"), SelectToken.Select, true)
-        .Match(Span.EqualToIgnoreCase("TRUE"), SelectToken.True, true)
-        .Match(Span.EqualToIgnoreCase("FALSE"), SelectToken.False, true)
-        .Match(Span.EqualToIgnoreCase("VALUES"), SelectToken.Values, true)
-        .Match(Span.EqualToIgnoreCase("WHERE"), SelectToken.Where, true)
-        .Match(Span.EqualToIgnoreCase("WINDOW"), SelectToken.Window, true)
-        .Match(Span.Regex(@"[a-zA-Z_][a-zA-Z0-9_]*"), SelectToken.Identifier, true)
+        .Match(Character.EqualTo('('), SelectTokens.LParen)
+        .Match(Character.EqualTo(')'), SelectTokens.RParen)
+        .Match(Character.EqualTo(','), SelectTokens.Comma)
+        .Match(Character.EqualTo('.'), SelectTokens.Dot)
+        .Match(Character.EqualTo('*'), SelectTokens.Star)
+        .Match(Character.EqualTo('='), SelectTokens.EqualTo)
+        .Match(Character.EqualTo('>'), SelectTokens.GreaterThan)
+        .Match(Character.EqualTo('<'), SelectTokens.LessThan)
+        .Match(Span.EqualTo("!="), SelectTokens.NotEqualTo)
+        .Match(Span.EqualTo("<>"), SelectTokens.NotEqualTo)
+        .Match(Span.EqualTo(">="), SelectTokens.GreaterThanOrEqualTo)
+        .Match(Span.EqualTo("<="), SelectTokens.LessThanOrEqualTo)
+        .Match(Span.EqualToIgnoreCase("ALL"), SelectTokens.All, true)
+        .Match(Span.EqualToIgnoreCase("AND"), SelectTokens.And, true)
+        .Match(Span.EqualToIgnoreCase("OR"), SelectTokens.Or, true)
+        .Match(Span.EqualToIgnoreCase("AS"), SelectTokens.As, true)
+        .Match(Span.EqualToIgnoreCase("BY"), SelectTokens.By, true)
+        .Match(Span.EqualToIgnoreCase("COUNT"), SelectTokens.Count, true)
+        .Match(Span.EqualToIgnoreCase("DISTINCT"), SelectTokens.Distinct, true)
+        .Match(Span.EqualToIgnoreCase("FROM"), SelectTokens.From, true)
+        .Match(Span.EqualToIgnoreCase("GROUP"), SelectTokens.Group, true)
+        .Match(Span.EqualToIgnoreCase("HAVING"), SelectTokens.Having, true)
+        .Match(Span.EqualToIgnoreCase("LIMIT"), SelectTokens.Limit, true)
+        .Match(Span.EqualToIgnoreCase("OFFSET"), SelectTokens.Offset, true)
+        .Match(Span.EqualToIgnoreCase("ORDER"), SelectTokens.Order, true)
+        .Match(Span.EqualToIgnoreCase("SELECT"), SelectTokens.Select, true)
+        .Match(Span.EqualToIgnoreCase("TRUE"), SelectTokens.True, true)
+        .Match(Span.EqualToIgnoreCase("FALSE"), SelectTokens.False, true)
+        .Match(Span.EqualToIgnoreCase("VALUES"), SelectTokens.Values, true)
+        .Match(Span.EqualToIgnoreCase("WHERE"), SelectTokens.Where, true)
+        .Match(Span.EqualToIgnoreCase("WINDOW"), SelectTokens.Window, true)
+        .Match(Span.Regex(@"[a-zA-Z_][a-zA-Z0-9_]*"), SelectTokens.Identifier, true)
+        .Match(Span.Regex(@"\G'(?:[^'\\\n\r]|\\.)*'"), SelectTokens.StringLiteral, true)
         .Build();
 
-    internal static readonly TokenListParser<SelectToken, Token<SelectToken>> Comma =
-        Token.EqualTo(SelectToken.Comma);
+    internal static readonly TokenListParser<SelectTokens, Token<SelectTokens>> Comma =
+        Token.EqualTo(SelectTokens.Comma);
 
-    internal static readonly TokenListParser<SelectToken, Token<SelectToken>> LParen =
-        Token.EqualTo(SelectToken.LParen);
+    internal static readonly TokenListParser<SelectTokens, Token<SelectTokens>> LParen =
+        Token.EqualTo(SelectTokens.LParen);
 
-    internal static readonly TokenListParser<SelectToken, Token<SelectToken>> RParen =
-        Token.EqualTo(SelectToken.RParen);
+    internal static readonly TokenListParser<SelectTokens, Token<SelectTokens>> RParen =
+        Token.EqualTo(SelectTokens.RParen);
 
-    internal static readonly TokenListParser<SelectToken, bool> HasDot =
-        Token.EqualTo(SelectToken.Dot).Value(true).OptionalOrDefault(false);
+    internal static readonly TokenListParser<SelectTokens, bool> HasDot =
+        Token.EqualTo(SelectTokens.Dot).Value(true).OptionalOrDefault(false);
 
-    internal static readonly TokenListParser<SelectToken, Token<SelectToken>> Identifier =
-        Token.EqualTo(SelectToken.Identifier);
+    internal static readonly TokenListParser<SelectTokens, Token<SelectTokens>> Identifier =
+        Token.EqualTo(SelectTokens.Identifier);
 
-    internal static readonly TokenListParser<SelectToken, Token<SelectToken>> Star =
-        Token.EqualTo(SelectToken.Star);
+    internal static readonly TokenListParser<SelectTokens, Token<SelectTokens>> Star =
+        Token.EqualTo(SelectTokens.Star);
 
-    internal static readonly TokenListParser<SelectToken, Token<SelectToken>> Distinct =
-        Token.EqualTo(SelectToken.Distinct);
+    internal static readonly TokenListParser<SelectTokens, Token<SelectTokens>> Distinct =
+        Token.EqualTo(SelectTokens.Distinct);
 
-    internal static readonly TokenListParser<SelectToken, TableName> TableName =
+    internal static readonly TokenListParser<SelectTokens, TableName> TableName =
         Identifier.Apply(Squeal.Parse.AsString)
         .Then(firstIdentifier => HasDot
         .Then(hasDot => Identifier.Apply(Squeal.Parse.AsString).OptionalOrDefault(String.Empty)
@@ -103,34 +119,84 @@ internal static class Sql
             ? new TableName(secondIdentifier, firstIdentifier)
             : new TableName(firstIdentifier, null))));
 
-    internal static readonly TokenListParser<SelectToken, TableName> From =
-        Token.EqualTo(SelectToken.From)
+    internal static readonly TokenListParser<SelectTokens, TableName> From =
+        Token.EqualTo(SelectTokens.From)
         .IgnoreThen(TableName);
 
-    internal static readonly TokenListParser<SelectToken, ResultColumn> ResultColumn =
+    internal static readonly TokenListParser<SelectTokens, ProjectedColumn> ProjectedColumn =
         Identifier.Apply(Squeal.Parse.AsString)
         .Or(Star.Apply(Squeal.Parse.AsString))
         .Then(firstIdentifier => HasDot
         .Then(hasDot => Identifier.Apply(Squeal.Parse.AsString).OptionalOrDefault(String.Empty)
         .Select(secondIdentifier => hasDot
-            ? new ResultColumn(secondIdentifier, firstIdentifier)
-            : new ResultColumn(firstIdentifier, null))));
+            ? new ProjectedColumn(secondIdentifier, firstIdentifier, null)
+            : new ProjectedColumn(firstIdentifier, null, null))));
 
-    internal static readonly TokenListParser<SelectToken, ResultColumn[]> Columns =
-        ResultColumn.ManyDelimitedBy(Comma)
+    internal static readonly TokenListParser<SelectTokens, ProjectedColumn[]> Projection =
+        ProjectedColumn.ManyDelimitedBy(Comma)
         .OptionalOrDefault([]);
 
-    internal static readonly TokenListParser<SelectToken, Token<SelectToken>> Count =
-        Token.EqualTo(SelectToken.Count)
+    internal static readonly TokenListParser<SelectTokens, ConditionalOperators> BinaryOperator =
+        Token.EqualTo(SelectTokens.EqualTo).Value(ConditionalOperators.EqualTo)
+        .Or(Token.EqualTo(SelectTokens.NotEqualTo).Value(ConditionalOperators.NotEqualTo))
+        .Or(Token.EqualTo(SelectTokens.GreaterThan).Value(ConditionalOperators.GreaterThan))
+        .Or(Token.EqualTo(SelectTokens.GreaterThanOrEqualTo).Value(ConditionalOperators.GreaterThanOrEqualTo))
+        .Or(Token.EqualTo(SelectTokens.LessThan).Value(ConditionalOperators.LessThan))
+        .Or(Token.EqualTo(SelectTokens.LessThanOrEqualTo).Value(ConditionalOperators.LessThanOrEqualTo));
+
+    internal static readonly TokenListParser<SelectTokens, LogicalOperators> LogicalOperator =
+        Token.EqualTo(SelectTokens.Or).Value(LogicalOperators.Or)
+        .Or(Token.EqualTo(SelectTokens.And).Value(LogicalOperators.And));
+
+    internal static readonly TokenListParser<SelectTokens, Token<SelectTokens>> StringLiteral =
+        Token.EqualTo(SelectTokens.StringLiteral);
+
+    internal static readonly TokenListParser<SelectTokens, ColumnExpression> ColumnExp =
+        Identifier
+            .Apply(Squeal.Parse.AsString)
+            .Select(Select.Expressions.ColumnExpression.Create);
+
+    internal static readonly TokenListParser<SelectTokens, StringLiteralExpression> LiteralExp =
+        StringLiteral
+            .Apply(Squeal.Parse.AsString)
+            .Select(Select.Expressions.StringLiteralExpression.Create);
+
+    internal static readonly TokenListParser<SelectTokens, Expression> ConditionalOperand =
+        ColumnExp.Select(e => (Expression)e)
+        .Or(LiteralExp.Select(e => (Expression)e));
+
+    internal static readonly TokenListParser<SelectTokens, Expression> ConditionalExp =
+        ConditionalOperand
+            .Then(left => BinaryOperator
+            .Then(op => ConditionalOperand
+            .Select(right => (Expression)new ConditionalExpression(left, right, op))));
+
+    internal static readonly TokenListParser<SelectTokens, Expression> LogicalExp =
+        ConditionalExp
+            .Then(left => LogicalOperator
+            .Then(op => ConditionalExp
+            .Select(right => (Expression)new LogicalExpression(left, right, op))));
+
+    // todo: not sure how to build the logical expression tree, so for now just focus on a single conditional expression
+    internal static readonly TokenListParser<SelectTokens, Predicate> Where =
+        Token.EqualTo(SelectTokens.Where)
+        .IgnoreThen(ConditionalExp
+            .Select(exp => new Predicate(exp)))
+        .OptionalOrDefault(Predicate.Default);
+
+    internal static readonly TokenListParser<SelectTokens, Token<SelectTokens>> Count =
+        Token.EqualTo(SelectTokens.Count)
         .IgnoreThen(LParen)
         .IgnoreThen(Star)
         .IgnoreThen(RParen);
 
-    internal static readonly TokenListParser<SelectToken, ISelectStatement> SelectStatement =
-        Token.EqualTo(SelectToken.Select)
-        .IgnoreThen(Columns
+    internal static readonly TokenListParser<SelectTokens, ISelectStatement> SelectStatement =
+        Token.EqualTo(SelectTokens.Select)
+        .IgnoreThen(Projection
             .Then(columns => From
-                .Select(table => (ISelectStatement)new SelectStatement(table, columns)))
+            .Then(table => Where
+                .Select(where => (ISelectStatement)new SelectStatement(table, columns, where)))
             .Or(Count.IgnoreThen(From
-                .Select(table => (ISelectStatement)new SelectCountStatement(table)))));
+                .Then(table => Where
+                .Select(where => (ISelectStatement)new SelectCountStatement(table, where)))))));
 }

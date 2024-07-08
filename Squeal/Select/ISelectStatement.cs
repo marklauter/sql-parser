@@ -2,5 +2,5 @@
 
 public interface ISelectStatement
 {
-    public TableName TableName { get; }
+    public TableName From { get; }
 }
