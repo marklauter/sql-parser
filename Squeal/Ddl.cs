@@ -221,9 +221,9 @@ public static class Ddl
         .Value(true).OptionalOrDefault(false);
 
     internal static readonly TokenListParser<DdlTokens, TableName> TableName =
-        Identifier.Apply(Squeal.Parse.AsString)
+        Identifier.Apply(Value.AsString)
         .Then(firstIdentifier => HasDot
-        .Then(hasDot => Identifier.Apply(Squeal.Parse.AsString).OptionalOrDefault(String.Empty)
+        .Then(hasDot => Identifier.Apply(Value.AsString).OptionalOrDefault(String.Empty)
         .Select(secondIdentifier => hasDot
             ? new TableName(secondIdentifier, firstIdentifier)
             : new TableName(firstIdentifier, null))));
@@ -249,7 +249,7 @@ public static class Ddl
 
     internal static readonly TokenListParser<DdlTokens, string> ColumnConstraintName =
         Token.EqualTo(DdlTokens.Constraint)
-        .IgnoreThen(Identifier.Apply(Squeal.Parse.AsString))
+        .IgnoreThen(Identifier.Apply(Value.AsString))
         .OptionalOrDefault(String.Empty);
 
     internal static readonly TokenListParser<DdlTokens, ConflictResolutions> ConcflictClause =
@@ -295,7 +295,7 @@ public static class Ddl
 
     internal static TokenListParser<DdlTokens, IColumnConstraint> Collate(string constraintName) =>
         Token.EqualTo(DdlTokens.Collate)
-        .IgnoreThen(Identifier.Apply(Squeal.Parse.AsString))
+        .IgnoreThen(Identifier.Apply(Value.AsString))
         .Select(identifier => (IColumnConstraint)new CollateConstraint(constraintName, identifier));
 
     internal static readonly TokenListParser<DdlTokens, IColumnConstraint> ColumnConstraint =
@@ -307,7 +307,7 @@ public static class Ddl
             .Select(cc => cc));
 
     internal static readonly TokenListParser<DdlTokens, ColumnDef> Column =
-        Identifier.Apply(Squeal.Parse.AsString)
+        Identifier.Apply(Value.AsString)
         .Then(name => ColumnTypeName
         .Then(typeName => ColumnConstraint.Many()
         .Select(constraints => new ColumnDef(name, typeName, constraints))));

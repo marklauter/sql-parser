@@ -3,7 +3,7 @@ using Superpower.Model;
 
 namespace Squeal;
 
-internal static class Parse
+internal static class Value
 {
     internal static readonly TextParser<string> AsString = input =>
     {

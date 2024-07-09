@@ -100,6 +100,7 @@ public sealed class SelectStatementParserTests
 
     [Theory]
     [InlineData("SELECT name, color FROM apples WHERE color = 'Yellow'")]
+    [InlineData("SELECT name, color FROM apples WHERE color = 'Yellow' or color = 'Red'")]
     public void ParsePredicate(string sql)
     {
         var result = Sql.TryParse(sql);
