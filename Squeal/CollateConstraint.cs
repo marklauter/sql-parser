@@ -1,4 +1,4 @@
-﻿namespace Squeal.Create.ColumnConstraints;
+﻿namespace Squeal;
 
 public sealed record CollateConstraint(string Name, string CollationName)
     : ColumnConstraint(Name);

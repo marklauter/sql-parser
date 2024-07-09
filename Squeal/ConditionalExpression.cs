@@ -1,4 +1,4 @@
-﻿namespace Squeal.Select.Expressions;
+﻿namespace Squeal;
 
 public record ConditionalExpression(ConditionalOperators Operator, Expression Left, Expression Right)
     : BinaryExpression(Left, Right)

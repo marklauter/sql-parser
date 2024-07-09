@@ -1,4 +1,4 @@
-﻿namespace Squeal.Select.Expressions;
+﻿namespace Squeal;
 
 public record StringLiteralExpression(string Value)
     : Expression

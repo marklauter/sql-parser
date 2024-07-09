@@ -1,4 +1,4 @@
-﻿namespace Squeal.Select;
+﻿namespace Squeal;
 
 public record TableName(string Name, string? Schema)
 {

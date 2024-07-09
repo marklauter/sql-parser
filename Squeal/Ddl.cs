@@ -1,6 +1,4 @@
-﻿using Squeal.Create;
-using Squeal.Create.ColumnConstraints;
-using Superpower;
+﻿using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
 using Superpower.Tokenizers;

@@ -1,5 +1,3 @@
-﻿using Squeal.Create.ColumnConstraints;
-
-namespace Squeal.Create;
+﻿namespace Squeal;
 
 public record ColumnDef(string Name, TypeName Type, IColumnConstraint[] Constraints);

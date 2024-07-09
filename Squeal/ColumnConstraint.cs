@@ -1,4 +1,4 @@
-﻿namespace Squeal.Create.ColumnConstraints;
+﻿namespace Squeal;
 
 public record ColumnConstraint(string Name)
     : IColumnConstraint;

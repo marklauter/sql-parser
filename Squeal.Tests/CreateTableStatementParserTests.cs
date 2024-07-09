@@ -1,6 +1,4 @@
-﻿using Squeal.Create;
-using Squeal.Create.ColumnConstraints;
-using Superpower;
+﻿using Superpower;
 
 namespace Squeal.Tests;
 

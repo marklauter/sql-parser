@@ -1,4 +1,4 @@
-﻿namespace Squeal.Create;
+﻿namespace Squeal;
 
 public enum Order
 {

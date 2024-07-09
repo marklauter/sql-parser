@@ -1,3 +1,3 @@
-﻿namespace Squeal.Create;
+﻿namespace Squeal;
 
 public sealed record TableOptions();

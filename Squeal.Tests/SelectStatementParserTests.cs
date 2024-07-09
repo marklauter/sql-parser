@@ -1,5 +1,3 @@
-using Squeal.Select;
-using Squeal.Select.Expressions;
 using Superpower;
 
 namespace Squeal.Tests;

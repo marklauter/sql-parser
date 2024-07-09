@@ -1,6 +1,4 @@
-﻿using Squeal.Select;
-using Squeal.Select.Expressions;
-using Superpower;
+﻿using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
 using Superpower.Tokenizers;
@@ -154,12 +152,12 @@ internal static class Sql
     internal static readonly TokenListParser<SelectTokens, ColumnExpression> ColumnExp =
         Identifier
             .Apply(Value.AsString)
-            .Select(Select.Expressions.ColumnExpression.Create);
+            .Select(ColumnExpression.Create);
 
     internal static readonly TokenListParser<SelectTokens, StringLiteralExpression> LiteralExp =
         StringLiteral
             .Apply(Value.AsString)
-            .Select(Select.Expressions.StringLiteralExpression.Create);
+            .Select(StringLiteralExpression.Create);
 
     internal static readonly TokenListParser<SelectTokens, Expression> ConditionalOperand =
         ColumnExp.Select(e => (Expression)e)

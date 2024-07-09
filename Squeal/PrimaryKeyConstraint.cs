@@ -1,4 +1,4 @@
-﻿namespace Squeal.Create.ColumnConstraints;
+﻿namespace Squeal;
 
 public sealed record PrimaryKeyConstraint(string Name, Order Order, ConflictResolutions Resolution, bool AutoIncrement)
     : ColumnConstraint(Name)

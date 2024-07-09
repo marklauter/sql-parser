@@ -1,4 +1,4 @@
-﻿namespace Squeal.Select.Expressions;
+﻿namespace Squeal;
 
 public enum ConditionalOperators
 {

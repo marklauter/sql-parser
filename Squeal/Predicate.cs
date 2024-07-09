@@ -1,6 +1,4 @@
-﻿using Squeal.Select.Expressions;
-
-namespace Squeal.Select;
+﻿namespace Squeal;
 
 public record Predicate(Expression Expression)
 {

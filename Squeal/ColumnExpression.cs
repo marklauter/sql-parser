@@ -1,4 +1,4 @@
-﻿namespace Squeal.Select.Expressions;
+﻿namespace Squeal;
 
 public record ColumnExpression(string ColumnName, string? TableName, string? SchemaName)
     : Expression

@@ -1,4 +1,4 @@
-﻿namespace Squeal.Select;
+﻿namespace Squeal;
 
 public interface ISelectStatement
 {

@@ -1,4 +1,4 @@
-﻿namespace Squeal.Create;
+﻿namespace Squeal;
 
 public sealed record CreateTableStatement(
     TableName TableName,
